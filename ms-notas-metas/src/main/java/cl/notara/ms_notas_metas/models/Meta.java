@@ -1,0 +1,62 @@
+package cl.notara.ms_notas_metas.models;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "metas")
+public class Meta {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotBlank(message = "El nombre de la meta es obligatorio")
+    private String nombre;
+
+    private String descripcion;
+
+    private LocalDate fechaLimite;
+
+    private boolean completada = false;
+
+    public Meta() {}
+
+    public Meta(Long id, String nombre, String descripcion, LocalDate fechaLimite) {
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.fechaLimite = fechaLimite;
+    }
+
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
+    }
+    public String getNombre() {
+        return nombre;
+    }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+    public String getDescripcion() {
+        return descripcion;
+    }
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+    public LocalDate getFechaLimite() {
+        return fechaLimite;
+    }
+    public void setFechaLimite(LocalDate fechaLimite) {
+        this.fechaLimite = fechaLimite;
+    }
+    public boolean isCompletada() {
+        return completada;
+    }
+    public void setCompletada(boolean completada) {
+        this.completada = completada;
+    }
+}
