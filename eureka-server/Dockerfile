@@ -1,17 +1,25 @@
-# Imagen base con Java 17
-FROM eclipse-temurin:17-jdk
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-# Carpeta de trabajo dentro del contenedor
 WORKDIR /app
 
-# Instalamos curl para poder usar healthchecks fácilmente
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Descargar dependencias primero (aprovecha caché de Docker)
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Copiamos el jar generado por Maven
-COPY target/*.jar app.jar
+# Compilar
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Puerto expuesto por el contenedor
+# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache curl
+
+COPY --from=build /app/target/*.jar app.jar
+
 EXPOSE 8761
 
-# Comando para arrancar la app
 ENTRYPOINT ["java", "-jar", "app.jar"]

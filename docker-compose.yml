@@ -93,14 +93,8 @@ services:
       - '3003:8083'
     environment:
       - SERVER_PORT=8083
-      - REDIS_URL=redis://redis:6379
-      - DB_URL=jdbc:postgresql://postgres:5432/linguaflow
-      - DB_USER=postgres
-      - DB_PASS=password
       - EUREKA_URL=http://eureka-server:8761/eureka
     depends_on:
-      mongodb:
-        condition: service_healthy
       redis:
         condition: service_healthy
       eureka-server:
@@ -114,7 +108,7 @@ services:
       - '3000:3000'
     environment:
       - MS_USUARIOS_URL=http://ms-usuarios:3001
-      - MS_CANCIONES_URL=http://ms-notas-metas:3003
+      - MS_CANCIONES_URL=http://ms-canciones:3002
       - API_GATEWAY_PORT=3000
     depends_on:
       - ms-usuarios
@@ -126,9 +120,15 @@ services:
     ports:
       - "3006:8086"
     environment:
-      - MS_USUARIOS_URL=http://ms-usuarios:3001
-      - MS_CANCIONES_URL=http://ms-notas-metas:3003
-      - API_GATEWAY_PORT=3006
+      - EUREKA_URL=http://eureka-server:8761/eureka
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      ms-usuarios:
+        condition: service_started
+      ms-notas-metas:
+        condition: service_started
+    restart: unless-stopped
 
 
 #-------------------------------servidor de eureka----------------------------------------------
