@@ -1,34 +1,13 @@
-/**
- * LyricsService
- *
- * Obtiene letras de canciones desde LRCLIB (API pública, sin autenticación).
- * Implementa caché con Redis para evitar llamadas repetidas.
- * Protegido por CircuitBreaker.
- *
- * LRCLIB API: https://lrclib.net/api
- */
-
 const axios = require('axios');
 const CircuitBreaker = require('../patterns/CircuitBreaker');
 const { getRedis } = require('../database/redis');
+const config = require('../config/config');
 
-const lyricsCircuit = new CircuitBreaker('LyricsAPI', {
-  failureThreshold: 3,
-  resetTimeout: 60_000, // 1 minuto (la API de letras es menos crítica)
-});
+const lyricsCircuit = new CircuitBreaker('LyricsAPI', config.circuitBreaker.lyrics);
 
-const CACHE_TTL = 60 * 60 * 24 * 7; // 7 días en segundos
+const CACHE_TTL = config.cache.lyricsTtlSeconds;
 const CACHE_PREFIX = 'lyrics:';
 
-/**
- * Obtiene la letra de una canción.
- * Primero revisa el caché de Redis; si no está, consulta LRCLIB.
- *
- * @param {string} spotifyId - ID de Spotify (usado como clave de caché)
- * @param {string} title     - Título de la canción
- * @param {string} artist    - Nombre del artista
- * @returns {Promise<{lyrics: string|null, synced: boolean, source: string}>}
- */
 const getLyrics = async (spotifyId, title, artist) => {
   const cacheKey = `${CACHE_PREFIX}${spotifyId}`;
 

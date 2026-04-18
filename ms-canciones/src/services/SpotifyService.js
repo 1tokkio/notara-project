@@ -8,24 +8,18 @@
 
 const axios = require('axios');
 const CircuitBreaker = require('../patterns/CircuitBreaker');
+const config = require('../config/config');
 
-const spotifyCircuit = new CircuitBreaker('Spotify', {
-  failureThreshold: 3,
-  resetTimeout: 30_000,
-});
+const spotifyCircuit = new CircuitBreaker('Spotify', config.circuitBreaker.spotify);
 
 let accessToken = null;
 let tokenExpiresAt = 0;
 
-/**
- * Obtiene un token de acceso usando el flujo Client Credentials.
- * El token se cachea en memoria hasta que expire.
- */
 const getAccessToken = async () => {
   if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
 
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+  const clientId = config.spotify.clientId;
+  const clientSecret = config.spotify.clientSecret;
 
   if (!clientId || !clientSecret) {
     throw new Error('Spotify credentials no configuradas en .env');
@@ -49,12 +43,6 @@ const getAccessToken = async () => {
   return accessToken;
 };
 
-/**
- * Busca canciones en Spotify.
- * @param {string} query - Término de búsqueda
- * @param {number} limit - Resultados máximos (default 10)
- * @returns {Promise<Array>}
- */
 const searchSongs = async (query, limit = 10) => {
   return spotifyCircuit.execute(
     async () => {
@@ -70,11 +58,6 @@ const searchSongs = async (query, limit = 10) => {
   );
 };
 
-/**
- * Obtiene los metadatos de una canción por su ID de Spotify.
- * @param {string} spotifyId
- * @returns {Promise<object>}
- */
 const getTrackById = async (spotifyId) => {
   return spotifyCircuit.execute(
     async () => {
@@ -89,11 +72,6 @@ const getTrackById = async (spotifyId) => {
   );
 };
 
-/**
- * Obtiene el género de un artista (necesario para LessonFactory).
- * @param {string} artistId
- * @returns {Promise<string>} Primer género o string vacío
- */
 const getArtistGenre = async (artistId) => {
   return spotifyCircuit.execute(
     async () => {
@@ -107,9 +85,6 @@ const getArtistGenre = async (artistId) => {
   );
 };
 
-/**
- * Mapea un track de Spotify a la estructura interna.
- */
 const mapTrack = (track) => ({
   spotifyId: track.id,
   title: track.name,

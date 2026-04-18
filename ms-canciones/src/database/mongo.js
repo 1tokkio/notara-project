@@ -1,12 +1,11 @@
 const mongoose = require('mongoose');
+const config = require('../config/config');
 
 let isConnected = false;
 
 const connectMongo = async () => {
   if (isConnected) return;
-
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/linguaflow';
-  await mongoose.connect(uri);
+  await mongoose.connect(config.mongodb.uri);
   isConnected = true;
   console.log('Conectado a MongoDB');
 };
