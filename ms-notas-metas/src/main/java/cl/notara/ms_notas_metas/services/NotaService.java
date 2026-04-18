@@ -1,11 +1,11 @@
 package cl.notara.ms_notas_metas.services;
 
+import cl.notara.ms_notas_metas.exceptions.ResourceNotFoundException;
 import cl.notara.ms_notas_metas.models.Nota;
 import cl.notara.ms_notas_metas.repositories.NotaRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class NotaService {
@@ -24,11 +24,19 @@ public class NotaService {
         return notaRepository.save(nota);
     }
 
-    public Optional<Nota> obtener(Long id) {
-        return notaRepository.findById(id);
+    public Nota obtener(Long id) {
+        return notaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Nota no encontrada con id: " + id));
+    }
+
+    public List<Nota> obtenerPorUsuario(Long idUsuario) {
+        return notaRepository.findByIdUsuario(idUsuario);
     }
 
     public void eliminar(Long id) {
+        if (!notaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Nota no encontrada con id: " + id);
+        }
         notaRepository.deleteById(id);
     }
 }

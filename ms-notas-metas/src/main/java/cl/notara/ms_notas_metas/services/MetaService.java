@@ -1,10 +1,11 @@
 package cl.notara.ms_notas_metas.services;
+
+import cl.notara.ms_notas_metas.exceptions.ResourceNotFoundException;
 import cl.notara.ms_notas_metas.models.Meta;
 import cl.notara.ms_notas_metas.repositories.MetaRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class MetaService {
@@ -23,11 +24,19 @@ public class MetaService {
         return metaRepository.save(meta);
     }
 
-    public Optional<Meta> obtener(Long id) {
-        return metaRepository.findById(id);
+    public Meta obtener(Long id) {
+        return metaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Meta no encontrada con id: " + id));
+    }
+
+    public List<Meta> obtenerPorUsuario(Long idUsuario) {
+        return metaRepository.findByIdUsuario(idUsuario);
     }
 
     public void eliminar(Long id) {
+        if (!metaRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Meta no encontrada con id: " + id);
+        }
         metaRepository.deleteById(id);
     }
 }

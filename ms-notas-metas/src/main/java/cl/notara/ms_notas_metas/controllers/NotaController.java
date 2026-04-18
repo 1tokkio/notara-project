@@ -1,4 +1,5 @@
 package cl.notara.ms_notas_metas.controllers;
+
 import cl.notara.ms_notas_metas.models.Nota;
 import cl.notara.ms_notas_metas.services.NotaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,28 +21,32 @@ public class NotaController {
         this.notaService = notaService;
     }
 
-    @Operation(summary = "Listar todas las notas")
     @GetMapping
+    @Operation(summary = "Listar todas las notas")
     public ResponseEntity<List<Nota>> listar() {
         return ResponseEntity.ok(notaService.listar());
     }
 
-    @Operation(summary = "creador de las notas")
     @PostMapping
+    @Operation(summary = "Crear nota")
     public ResponseEntity<Nota> crear(@Valid @RequestBody Nota nota) {
-        return ResponseEntity.ok(notaService.guardar(nota));
+        return ResponseEntity.status(201).body(notaService.guardar(nota));
     }
 
-    @Operation(summary = "buscador de las notas")
     @GetMapping("/{id}")
+    @Operation(summary = "Obtener nota por ID")
     public ResponseEntity<Nota> obtener(@PathVariable Long id) {
-        return notaService.obtener(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(notaService.obtener(id));
     }
 
-    @Operation(summary = "eliminador de las notas")
+    @GetMapping("/usuario/{idUsuario}")
+    @Operation(summary = "Obtener notas por usuario")
+    public ResponseEntity<List<Nota>> obtenerPorUsuario(@PathVariable Long idUsuario) {
+        return ResponseEntity.ok(notaService.obtenerPorUsuario(idUsuario));
+    }
+
     @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar nota")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         notaService.eliminar(id);
         return ResponseEntity.noContent().build();

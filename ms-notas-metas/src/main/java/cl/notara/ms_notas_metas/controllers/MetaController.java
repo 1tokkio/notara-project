@@ -21,28 +21,32 @@ public class MetaController {
         this.metaService = metaService;
     }
 
-    @Operation(summary = "Listar todas las metas")
     @GetMapping
+    @Operation(summary = "Listar todas las metas")
     public ResponseEntity<List<Meta>> listar() {
         return ResponseEntity.ok(metaService.listar());
     }
 
-    @Operation(summary = "creador de metas")
     @PostMapping
+    @Operation(summary = "Crear meta")
     public ResponseEntity<Meta> crear(@Valid @RequestBody Meta meta) {
         return ResponseEntity.status(201).body(metaService.guardar(meta));
     }
 
-    @Operation(summary = "buscador de metas")
     @GetMapping("/{id}")
+    @Operation(summary = "Obtener meta por ID")
     public ResponseEntity<Meta> obtener(@PathVariable Long id) {
-        return metaService.obtener(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(metaService.obtener(id));
     }
 
-    @Operation(summary = "eliminador de metas")
+    @GetMapping("/usuario/{idUsuario}")
+    @Operation(summary = "Obtener metas por usuario")
+    public ResponseEntity<List<Meta>> obtenerPorUsuario(@PathVariable Long idUsuario) {
+        return ResponseEntity.ok(metaService.obtenerPorUsuario(idUsuario));
+    }
+
     @DeleteMapping("/{id}")
+    @Operation(summary = "Eliminar meta")
     public ResponseEntity<Void> eliminar(@PathVariable Long id) {
         metaService.eliminar(id);
         return ResponseEntity.noContent().build();
