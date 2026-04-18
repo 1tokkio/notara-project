@@ -51,4 +51,13 @@ public class MetaController {
         metaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar meta")
+    public ResponseEntity<Meta> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody Meta meta) {
+
+        return ResponseEntity.ok(metaService.actualizar(id, meta));
+    }
 }

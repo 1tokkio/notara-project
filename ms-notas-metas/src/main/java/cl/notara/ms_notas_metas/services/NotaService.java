@@ -39,4 +39,15 @@ public class NotaService {
         }
         notaRepository.deleteById(id);
     }
+
+    public Nota actualizar(Long id, Nota notaActualizada) {
+        Nota nota = notaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Nota no encontrada con id: " + id));
+
+        nota.setTitulo(notaActualizada.getTitulo());
+        nota.setContenido(notaActualizada.getContenido());
+        nota.setIdUsuario(notaActualizada.getIdUsuario());
+
+        return notaRepository.save(nota);
+    }
 }

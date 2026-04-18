@@ -51,4 +51,13 @@ public class NotaController {
         notaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar nota")
+    public ResponseEntity<Nota> actualizar(
+            @PathVariable Long id,
+            @Valid @RequestBody Nota nota) {
+
+        return ResponseEntity.ok(notaService.actualizar(id, nota));
+    }
 }

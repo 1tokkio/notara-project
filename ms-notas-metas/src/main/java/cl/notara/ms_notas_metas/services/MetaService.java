@@ -39,4 +39,17 @@ public class MetaService {
         }
         metaRepository.deleteById(id);
     }
+
+    public Meta actualizar(Long id, Meta metaActualizada) {
+        Meta meta = metaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Meta no encontrada con id: " + id));
+
+        meta.setNombre(metaActualizada.getNombre());
+        meta.setDescripcion(metaActualizada.getDescripcion());
+        meta.setFechaLimite(metaActualizada.getFechaLimite());
+        meta.setCompletada(metaActualizada.isCompletada());
+        meta.setIdUsuario(metaActualizada.getIdUsuario());
+
+        return metaRepository.save(meta);
+    }
 }
