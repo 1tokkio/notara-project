@@ -5,18 +5,26 @@
  * Maneja automáticamente el token JWT en los headers.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = (() => {
+  // En CodeSandbox, detectar automáticamente la URL del gateway
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname.includes(".csb.app")
+  ) {
+    return window.location.origin.replace("-3001.csb.app", "-3000.csb.app");
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+})();
 
 /**
  * Función base de fetch con manejo de errores y token automático.
  */
 async function request(path, options = {}) {
-  const token = typeof window !== 'undefined'
-    ? localStorage.getItem('access_token')
-    : null;
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -27,7 +35,7 @@ async function request(path, options = {}) {
   if (res.status === 401) {
     const renewed = await refreshToken();
     if (renewed) {
-      const newToken = localStorage.getItem('access_token');
+      const newToken = localStorage.getItem("access_token");
       const retryRes = await fetch(`${API_URL}${path}`, {
         ...options,
         headers: { ...headers, Authorization: `Bearer ${newToken}` },
@@ -36,7 +44,7 @@ async function request(path, options = {}) {
     }
     // Si no se pudo renovar, redirigir al login
     localStorage.clear();
-    window.location.href = '/login';
+    window.location.href = "/login";
     return;
   }
 
@@ -49,45 +57,45 @@ async function request(path, options = {}) {
 
 export const auth = {
   register: (name, email, password) =>
-    request('/auth/register', {
-      method: 'POST',
+    request("/auth/register", {
+      method: "POST",
       body: JSON.stringify({ name, email, password }),
     }),
 
   login: async (email, password) => {
-    const data = await request('/auth/login', {
-      method: 'POST',
+    const data = await request("/auth/login", {
+      method: "POST",
       body: JSON.stringify({ email, password }),
     });
     if (data?.accessToken) {
-      localStorage.setItem('access_token', data.accessToken);
-      localStorage.setItem('refresh_token', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem("access_token", data.accessToken);
+      localStorage.setItem("refresh_token", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
     return data;
   },
 
   logout: () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
   },
 
-  me: () => request('/users/me'),
+  me: () => request("/users/me"),
 };
 
 async function refreshToken() {
   try {
-    const rt = localStorage.getItem('refresh_token');
+    const rt = localStorage.getItem("refresh_token");
     if (!rt) return false;
     const res = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken: rt }),
     });
     if (!res.ok) return false;
     const data = await res.json();
-    localStorage.setItem('access_token', data.accessToken);
+    localStorage.setItem("access_token", data.accessToken);
     return true;
   } catch {
     return false;
@@ -100,34 +108,31 @@ export const songs = {
   search: (query, limit = 10) =>
     request(`/songs/search?q=${encodeURIComponent(query)}&limit=${limit}`),
 
-  getById: (id) =>
-    request(`/songs/${id}`),
+  getById: (id) => request(`/songs/${id}`),
 
-  getLyrics: (id) =>
-    request(`/songs/${id}/lyrics`),
+  getLyrics: (id) => request(`/songs/${id}/lyrics`),
 
-  getLessonType: (id) =>
-    request(`/songs/${id}/lesson-type`),
+  getLessonType: (id) => request(`/songs/${id}/lesson-type`),
 };
 
 // ─── IA Tutor ─────────────────────────────────────────────────────────────────
 
 export const ia = {
-  explain: (songId, phrase, userLevel = 'intermediate') =>
-    request('/ia/explain', {
-      method: 'POST',
+  explain: (songId, phrase, userLevel = "intermediate") =>
+    request("/ia/explain", {
+      method: "POST",
       body: JSON.stringify({ songId, phrase, userLevel }),
     }),
 
   getExercises: (songId, phrase) =>
-    request('/ia/exercises', {
-      method: 'POST',
+    request("/ia/exercises", {
+      method: "POST",
       body: JSON.stringify({ songId, phrase }),
     }),
 
   chat: (songId, message, history = []) =>
-    request('/ia/chat', {
-      method: 'POST',
+    request("/ia/chat", {
+      method: "POST",
       body: JSON.stringify({ songId, message, history }),
     }),
 };
@@ -135,18 +140,17 @@ export const ia = {
 // ─── Progreso ─────────────────────────────────────────────────────────────────
 
 export const progress = {
-  getStats: () =>
-    request('/progress/stats'),
+  getStats: () => request("/progress/stats"),
 
   saveWord: (word, songId, context) =>
-    request('/progress/word', {
-      method: 'POST',
+    request("/progress/word", {
+      method: "POST",
       body: JSON.stringify({ word, songId, context }),
     }),
 
   completeLesson: (songId, lessonType, wordsLearned) =>
-    request('/progress/lesson-complete', {
-      method: 'POST',
+    request("/progress/lesson-complete", {
+      method: "POST",
       body: JSON.stringify({ songId, lessonType, wordsLearned }),
     }),
 };

@@ -1,27 +1,29 @@
-require('dotenv').config();
-const Fastify = require('fastify');
-const { connectMongo } = require('./database/mongo');
-const { connectRedis } = require('./database/redis');
-const songRoutes = require('./routes/songs');
-const config = require('./config/config');
-const registerErrorHandler = require('./middleware/errorHandler');
-const registerRequestLogger = require('./middleware/requestLogger');
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../.env"),
+});
+const Fastify = require("fastify");
+const { connectMongo } = require("./database/mongo");
+const { connectRedis } = require("./database/redis");
+const songRoutes = require("./routes/songs");
+const config = require("./config/config");
+const registerErrorHandler = require("./middleware/errorHandler");
+const registerRequestLogger = require("./middleware/requestLogger");
 
 const app = Fastify({ logger: true });
 
 registerErrorHandler(app);
 registerRequestLogger(app);
 
-app.register(require('@fastify/cors'), {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+app.register(require("@fastify/cors"), {
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
 });
 
-app.register(songRoutes, { prefix: '/songs' });
+app.register(songRoutes, { prefix: "" });
 
-app.get('/health', async () => ({
-  status: 'ok',
-  service: 'ms-canciones',
+app.get("/health", async () => ({
+  status: "ok",
+  service: "ms-canciones",
   timestamp: new Date().toISOString(),
 }));
 

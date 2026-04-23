@@ -1,11 +1,3 @@
-/**
- * SpotifyService
- *
- * Gestiona la autenticación Client Credentials con Spotify y provee
- * métodos para buscar canciones y obtener sus metadatos.
- * Todas las llamadas externas están protegidas por CircuitBreaker.
- */
-
 const axios = require('axios');
 const CircuitBreaker = require('../patterns/CircuitBreaker');
 const config = require('../config/config');
@@ -21,26 +13,34 @@ const getAccessToken = async () => {
   const clientId = config.spotify.clientId;
   const clientSecret = config.spotify.clientSecret;
 
+  console.log('CLIENT_ID:', clientId);
+  console.log('CLIENT_SECRET:', clientSecret ? 'exists' : 'MISSING');
+
   if (!clientId || !clientSecret) {
     throw new Error('Spotify credentials no configuradas en .env');
   }
 
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-  const response = await axios.post(
-    'https://accounts.spotify.com/api/token',
-    'grant_type=client_credentials',
-    {
-      headers: {
-        Authorization: `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    }
-  );
-
-  accessToken = response.data.access_token;
-  tokenExpiresAt = Date.now() + response.data.expires_in * 1000 - 60_000; // renovar 1 min antes
-  return accessToken;
+  try {
+    const response = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      'grant_type=client_credentials',
+      {
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+    console.log('Token obtenido OK');
+    accessToken = response.data.access_token;
+    tokenExpiresAt = Date.now() + response.data.expires_in * 1000 - 60000;
+    return accessToken;
+  } catch (err) {
+    console.error('Error token:', err.response?.data || err.message);
+    throw err;
+  }
 };
 
 const searchSongs = async (query, limit = 10) => {
@@ -51,7 +51,6 @@ const searchSongs = async (query, limit = 10) => {
         headers: { Authorization: `Bearer ${token}` },
         params: { q: query, type: 'track', limit, market: 'CL' },
       });
-
       return response.data.tracks.items.map(mapTrack);
     },
     () => ({ error: 'Spotify no disponible temporalmente', items: [] })
