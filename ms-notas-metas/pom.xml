@@ -43,6 +43,12 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
+        <!-- Dependencia de clase DTO -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+
         <!-- SWAGGER -->
         <dependency>
             <groupId>org.springdoc</groupId>
