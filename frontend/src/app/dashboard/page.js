@@ -4,9 +4,15 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
+<<<<<<< HEAD
 import { progress as progressApi } from '@/lib/api';
 import Navbar from '@/components/ui/Navbar';
 import { useAuth } from '@/context/AuthContext';
+=======
+import { progress as progressApi } from '../../lib/api';
+import Navbar from '../../components/ui/Navbar';
+import { useAuth } from '../../context/AuthContext';
+>>>>>>> origin/panxo
 
 // ─── Sub-componentes ──────────────────────────────────────────────────────────
 

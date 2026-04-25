@@ -18,7 +18,7 @@ public class Nota {
     @Column(length = 500)
     private String contenido;
 
-    @NotNull(message = "El idUsuario es obligatorio")
+    @NotNull(message = "El id del Usuario es obligatorio")
     @Column(nullable = false)
     private Long idUsuario;
 

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /**
  * LyricsService
  *
@@ -29,6 +30,18 @@ const CACHE_PREFIX = 'lyrics:';
  * @param {string} artist    - Nombre del artista
  * @returns {Promise<{lyrics: string|null, synced: boolean, source: string}>}
  */
+=======
+const axios = require('axios');
+const CircuitBreaker = require('../patterns/CircuitBreaker');
+const { getRedis } = require('../database/redis');
+const config = require('../config/config');
+
+const lyricsCircuit = new CircuitBreaker('LyricsAPI', config.circuitBreaker.lyrics);
+
+const CACHE_TTL = config.cache.lyricsTtlSeconds;
+const CACHE_PREFIX = 'lyrics:';
+
+>>>>>>> origin/panxo
 const getLyrics = async (spotifyId, title, artist) => {
   const cacheKey = `${CACHE_PREFIX}${spotifyId}`;
 
