@@ -1,7 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+<<<<<<< HEAD
+import { useAuth } from '@/context/AuthContext';
+=======
 import { useAuth } from '../../context/AuthContext';
+>>>>>>> origin/panxo
 
 export default function Navbar() {
   const { user, logout } = useAuth();

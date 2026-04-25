@@ -1,5 +1,9 @@
 import './globals.css';
+<<<<<<< HEAD
+import { AuthProvider } from '@/context/AuthContext';
+=======
 import { AuthProvider } from '../context/AuthContext';
+>>>>>>> origin/panxo
 
 export const metadata = {
   title: 'LinguaFlow — Aprende inglés con música',

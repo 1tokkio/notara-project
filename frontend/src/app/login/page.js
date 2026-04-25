@@ -2,7 +2,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+<<<<<<< HEAD
+import { useAuth } from '@/context/AuthContext';
+=======
 import { useAuth } from '../../context/AuthContext';
+>>>>>>> origin/panxo
 
 export default function LoginPage() {
   const [email, setEmail]       = useState('');

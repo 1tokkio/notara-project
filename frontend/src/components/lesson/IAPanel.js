@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+<<<<<<< HEAD
+import { ia, progress as progressApi } from '@/lib/api';
+=======
 import { ia, progress as progressApi } from '../../lib/api';
+>>>>>>> origin/panxo
 import ExerciseCard from './ExerciseCard';
 
 /**
