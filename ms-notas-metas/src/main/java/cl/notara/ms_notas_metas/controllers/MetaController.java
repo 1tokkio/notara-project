@@ -30,6 +30,7 @@ public class MetaController {
     @PostMapping
     @Operation(summary = "Crear meta")
     public ResponseEntity<Meta> crear(@Valid @RequestBody Meta meta) {
+        Meta nuevaMeta = metaService.guardar(meta);
         return ResponseEntity.status(201).body(metaService.guardar(meta));
     }
 
