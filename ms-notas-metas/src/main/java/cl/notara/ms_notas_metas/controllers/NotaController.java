@@ -1,5 +1,6 @@
 package cl.notara.ms_notas_metas.controllers;
 
+import cl.notara.ms_notas_metas.client.UsuarioClient;
 import cl.notara.ms_notas_metas.models.Nota;
 import cl.notara.ms_notas_metas.services.NotaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,9 +17,11 @@ import java.util.List;
 public class NotaController {
 
     private final NotaService notaService;
+    private final UsuarioClient usuarioCliente;
 
-    public NotaController(NotaService notaService) {
+    public NotaController(NotaService notaService, UsuarioClient usuarioCliente) {
         this.notaService = notaService;
+        this.usuarioCliente = usuarioCliente;
     }
 
     @GetMapping
@@ -30,7 +33,8 @@ public class NotaController {
     @PostMapping
     @Operation(summary = "Crear nota")
     public ResponseEntity<Nota> crear(@Valid @RequestBody Nota nota) {
-        return ResponseEntity.status(201).body(notaService.guardar(nota));
+        Nota nuevaNota = notaService.guardar(nota);
+        return ResponseEntity.status(201).body(nuevaNota);
     }
 
     @GetMapping("/{id}")

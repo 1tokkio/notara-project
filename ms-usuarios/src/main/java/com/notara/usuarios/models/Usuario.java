@@ -26,10 +26,6 @@ public class Usuario {
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")
-<<<<<<< HEAD
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-=======
->>>>>>> origin/panxo
     @Column(nullable = false)
     private String password;
 
