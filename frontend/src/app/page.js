@@ -1,11 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-<<<<<<< HEAD
 import { useAuth } from '@/context/AuthContext';
-=======
-import { useAuth } from '../context/AuthContext'
->>>>>>> origin/panxo
 
 export default function Home() {
   const { user, loading } = useAuth();
