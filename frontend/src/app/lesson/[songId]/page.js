@@ -1,19 +1,11 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-<<<<<<< HEAD
 import { songs as songsApi, progress as progressApi } from '@/lib/api';
 import Navbar from '@/components/ui/Navbar';
 import SpotifyEmbedPlayer from '@/components/ui/SpotifyEmbedPlayer';
 import IAPanel from '@/components/lesson/IAPanel';
 import ProgressWidget from '@/components/lesson/ProgressWidget';
-=======
-import { songs as songsApi, progress as progressApi } from '../../../lib/api';
-import Navbar from '../../../components/ui/Navbar';
-import SpotifyEmbedPlayer from './../../components/ui/SpotifyEmbedPlayer';
-import IAPanel from './../../components/lesson/IAPanel';
-import ProgressWidget from './../../components/lesson/ProgressWidget';
->>>>>>> origin/panxo
 
 /**
  * Parsea el formato LRC (con timestamps) a un array de líneas.

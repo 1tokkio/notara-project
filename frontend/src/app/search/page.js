@@ -1,20 +1,11 @@
 'use client';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-<<<<<<< HEAD
 import { useAuth } from '@/context/AuthContext';
 import { songs as songsApi } from '@/lib/api';
 import Navbar from '@/components/ui/Navbar';
 import SearchBar from '@/components/ui/SearchBar';
 import SongCard from '@/components/ui/SongCard';
-=======
-import { useAuth } from '../../context/AuthContext';
-
-import { songs as songsApi } from '../../lib/api';
-import Navbar from '../../components/ui/Navbar';
-import SearchBar from '../../components/ui/SearchBar';
-import SongCard from '../../components/ui/SongCard';
->>>>>>> origin/panxo
 
 export default function SearchPage() {
   const { user } = useAuth();
