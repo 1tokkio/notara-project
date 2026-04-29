@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ia, progress as progressApi } from '@/lib/api';
+import { ia, progress as progressApi } from '../../lib/api';
 import ExerciseCard from './ExerciseCard';
 
 /**
