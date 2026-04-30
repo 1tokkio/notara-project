@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-FROM node:20-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm install --production
-
-COPY . .
-
-EXPOSE 3002
-
-=======
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
@@ -32,5 +19,4 @@ EXPOSE 3002
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:3002/health || exit 1
 
->>>>>>> origin/panxo
 CMD ["node", "src/index.js"]

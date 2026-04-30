@@ -25,7 +25,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/search" className="flex items-center gap-2 font-bold text-lg">
           <span className="text-brand-green text-2xl">🎵</span>
-          <span className="text-white">LinguaFlow</span>
+          <span className="text-white">Notara</span>
         </Link>
 
         {/* Links */}

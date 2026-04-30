@@ -35,7 +35,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-green mb-4">
             <span className="text-3xl">🎵</span>
           </div>
-          <h1 className="text-3xl font-bold text-white">LinguaFlow</h1>
+          <h1 className="text-3xl font-bold text-white">Notara</h1>
           <p className="text-brand-text mt-1">Aprende inglés con tu música favorita</p>
         </div>
 

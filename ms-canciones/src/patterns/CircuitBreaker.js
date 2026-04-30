@@ -64,6 +64,7 @@ class CircuitBreaker {
       this._onSuccess();
       return result;
     } catch (err) {
+      console.error(`[CircuitBreaker:${this.name}] Error:`, err.response?.data || err.message);
       this._onFailure();
       if (fallback) return fallback();
       throw err;
