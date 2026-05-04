@@ -22,13 +22,17 @@ public class Nota {
     @Column(nullable = false)
     private Long idUsuario;
 
+    @Enumerated(EnumType.STRING)
+    private EstadoNota estado;
+
     public Nota() {}
 
-    public Nota(Long id, String titulo, String contenido, Long idUsuario) {
+    public Nota(Long id, String titulo, String contenido, Long idUsuario,EstadoNota estado) {
         this.id = id;
         this.titulo = titulo;
         this.contenido = contenido;
         this.idUsuario = idUsuario;
+        this.estado = estado;
     }
 
     // getters y setters
@@ -44,5 +48,12 @@ public class Nota {
     public Long getIdUsuario() { return idUsuario; }
     public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
 
+    public EstadoNota getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoNota estado) {
+        this.estado = estado;
+    }
 }
 
