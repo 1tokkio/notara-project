@@ -26,14 +26,18 @@ public class Meta {
     @Column(nullable = false)
     private Long idUsuario;
 
+    @Enumerated(EnumType.STRING)
+    private EstadoMeta estado;
+
     public Meta() {}
 
-    public Meta(Long id, String nombre, String descripcion, LocalDate fechaLimite, Long idUsuario) {
+    public Meta(Long id, String nombre, String descripcion, LocalDate fechaLimite, Long idUsuario, EstadoMeta estado) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fechaLimite = fechaLimite;
         this.idUsuario = idUsuario;
+        this.estado = estado;
     }
 
     // getters y setters
@@ -54,4 +58,11 @@ public class Meta {
 
     public Long getIdUsuario() { return idUsuario; }
     public void setIdUsuario(Long idUsuario) { this.idUsuario = idUsuario; }
+
+    public EstadoMeta getEstado() {
+        return estado;
+    }
+    public void setEstado(EstadoMeta estado) {
+        this.estado = estado;
+    }
 }
