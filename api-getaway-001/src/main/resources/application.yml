@@ -11,16 +11,23 @@ spring:
         webmvc:
           routes:
             - id: ruta-usuarios
-              uri: lb://ms-usuarios
+              uri: http://localhost:8081
               predicates:
                 - Path=/api/usuarios/**
               filters:
                 - StripPrefix=1
 
-            - id: ruta-notas-metas
-              uri: lb://ms-notas-metas
+            - id: ruta-metas
+              uri: http://localhost:8083/metas
               predicates:
                 - Path=/api/metas/**
+              filters:
+                - StripPrefix=1
+
+            - id: ruta-notas
+              uri: http://localhost:8083/notas
+              predicates:
+                - Path=/api/notas/**
               filters:
                 - StripPrefix=1
 

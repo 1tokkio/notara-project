@@ -7,7 +7,7 @@ spring:
 
   datasource:
     url: jdbc:postgresql://postgresql-elish.alwaysdata.net:5432/elish_notara
-    username: elish_1
+    username: elish_2
     password: kbe_3036
     driver-class-name: org.postgresql.Driver
 
