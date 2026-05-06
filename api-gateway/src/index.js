@@ -57,7 +57,7 @@ const proxyOptions = (target, serviceName) => ({
   changeOrigin: true,
   on: {
     error: (err, req, res) => {
-      console.error(`[Gateway] Error al conectar con ${serviceName}:`, err.message);
+      console.error(`[Gateway] Error al conectar con ${serviceName}:`, err.code || err.message || err);
       res.status(503).json({
         error: `Servicio ${serviceName} no disponible`,
         message: 'Intenta nuevamente en unos segundos',

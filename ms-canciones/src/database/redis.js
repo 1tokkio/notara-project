@@ -4,9 +4,12 @@ const config = require('../config/config');
 let redisClient = null;
 
 const connectRedis = async () => {
-  redisClient = createClient({ url: config.redis.url });
+  redisClient = createClient({
+    url: config.redis.url,
+    socket: { reconnectStrategy: false, connectTimeout: 3000 },
+  });
 
-  redisClient.on('error', (err) => console.error('Redis error:', err));
+  redisClient.on('error', () => {});
 
   await redisClient.connect();
   console.log('Conectado a Redis');

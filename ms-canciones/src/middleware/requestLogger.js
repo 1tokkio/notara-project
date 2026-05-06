@@ -12,7 +12,7 @@ function registerRequestLogger(fastify) {
         method: request.method,
         url: request.url,
         statusCode: reply.statusCode,
-        responseTimeMs: Math.round(reply.getResponseTime()),
+        responseTimeMs: Math.round(reply.elapsedTime),
       },
       'request completed'
     );

@@ -29,7 +29,11 @@ app.get("/health", async () => ({
 
 const start = async () => {
   try {
-    await connectMongo();
+    try {
+      await connectMongo();
+    } catch (err) {
+      app.log.warn('MongoDB no disponible, persistencia desactivada: ' + err.message);
+    }
     try {
       await connectRedis();
     } catch (err) {
