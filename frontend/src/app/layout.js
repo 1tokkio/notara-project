@@ -2,7 +2,7 @@ import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 
 export const metadata = {
-  title: 'LinguaFlow — Aprende inglés con música',
+  title: 'Notara — Aprende inglés con música',
   description: 'Plataforma de aprendizaje de inglés usando canciones de Spotify e IA',
 };
 
