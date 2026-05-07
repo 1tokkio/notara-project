@@ -6,16 +6,10 @@ import com.notara.usuarios.services.UsuarioService;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-<<<<<<< HEAD
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.mock.mockito.MockBean;
-=======
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
->>>>>>> origin/panxo
 
 import java.util.List;
 
@@ -24,11 +18,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UsuarioController.class)
-<<<<<<< HEAD
-
-=======
 @AutoConfigureMockMvc(addFilters = false)
->>>>>>> origin/panxo
 public class UsuarioControllerTest {
 
     @Autowired
@@ -53,19 +43,7 @@ public class UsuarioControllerTest {
 
     @Test
     void crearUsuario() throws Exception {
-<<<<<<< HEAD
-        Usuario usuario = new Usuario(null, "Juan", "Perez", "juan@test.com", "1234");
 
-        when(usuarioService.guardarUsuario(Mockito.any())).thenReturn(usuario);
-
-        mockMvc.perform(post("/usuarios")
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(usuario)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value("Juan"));
-    }
-}
-=======
         // Crear usuario con password
         Usuario usuario = new Usuario(null, "Juan", "Perez", "juan@test.com", "mati");
 
@@ -84,4 +62,3 @@ public class UsuarioControllerTest {
                 .andExpect(jsonPath("$.nombre").value("Juan"));
     }
 }
->>>>>>> origin/panxo

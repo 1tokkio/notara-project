@@ -6,9 +6,9 @@ spring:
     name: ms-notas-metas
 
   datasource:
-    url: jdbc:postgresql://postgresql-elish.alwaysdata.net:5432/elish_notara
-    username: elish_2
-    password: kbe_3036
+    url: jdbc:postgresql://postgres-notas-metas:5432/notara-notas-metas-db
+    username: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -21,10 +21,6 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
-
-  h2:
-    console:
-      enabled: false
 
 eureka:
   client:
@@ -41,6 +37,3 @@ management:
     web:
       exposure:
         include: health,info
-  endpoint:
-    health:
-      show-details: always
