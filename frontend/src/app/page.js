@@ -17,7 +17,7 @@ export default function Home() {
     <div className="min-h-screen bg-brand-dark flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-brand-green border-t-transparent animate-spin" />
-        <p className="text-brand-text text-sm">Cargando LinguaFlow...</p>
+        <p className="text-brand-text text-sm">Cargando Notara...</p>
       </div>
     </div>
   );
