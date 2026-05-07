@@ -6,9 +6,9 @@ spring:
     name: ms-usuarios
 
   datasource:
-    url: jdbc:postgresql://postgresql-elish.alwaysdata.net:5432/elish_notara
-    username: elish_2
-    password: kbe_3036
+    url: jdbc:postgresql://postgres-usuarios:5432/notara-usuarios-db
+    username: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -16,6 +16,11 @@ spring:
       ddl-auto: update
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
 
   h2:
     console:
