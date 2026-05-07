@@ -4,15 +4,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { songs as songsApi, progress as progressApi, ia } from '../../../lib/api';
 import Navbar from '../../../components/ui/Navbar';
 import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
-
-// ─── Constantes de UI ─────────────────────────────────────────────────────────
-
-const LESSON_MODES = [
-  { id: 'bilingual', label: 'EN / ES' },
-  { id: 'en-only',   label: 'Solo EN' },
-  { id: 'es-only',   label: 'Solo ES' },
-  { id: 'synced',    label: 'Letra sincronizada' },
-];
+// Patrón Strategy: cada modo de letra es una estrategia intercambiable
+import { LYRICS_STRATEGIES, getLyricsStrategy } from '../../../patterns/LyricsDisplayStrategy';
 
 const EXERCISE_CARDS = [
   { badge: 'Vocabulario', color: 'green',  title: 'Completa los espacios',  desc: 'Rellena las palabras que faltan en la letra.' },
@@ -117,7 +110,7 @@ export default function LessonPage() {
   const [activeLineIdx, setActiveLineIdx] = useState(-1);
   const lyricsContainerRef = useRef(null);
 
-  // Letra
+  // Patrón Strategy: estrategia activa de visualización de letra
   const [lyricsMode, setLyricsMode] = useState('en-only');
   const [translations, setTranslations] = useState({});
   const [keywords, setKeywords]     = useState([]);
@@ -358,92 +351,35 @@ export default function LessonPage() {
         {/* ═══════════════ COLUMNA CENTRAL ═══════════════ */}
         <main className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
 
-          {/* Toggles de modo de letra */}
+          {/* Toggles — cada botón selecciona una estrategia de visualización (Patrón Strategy) */}
           <div className="flex-shrink-0 flex items-center gap-1 px-4 py-3 border-b border-white/5">
-            {LESSON_MODES.map((mode) => (
+            {LYRICS_STRATEGIES.map((strategy) => (
               <button
-                key={mode.id}
-                onClick={() => setLyricsMode(mode.id)}
+                key={strategy.id}
+                onClick={() => setLyricsMode(strategy.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  lyricsMode === mode.id
+                  lyricsMode === strategy.id
                     ? 'bg-brand-hover text-white'
                     : 'text-brand-text hover:text-white'
                 }`}
               >
-                {mode.label}
+                {strategy.label}
               </button>
             ))}
             {lyricsData?.synced && (
-              <span className="ml-auto text-brand-green text-[10px] font-medium">
-                Sincronizada
-              </span>
+              <span className="ml-auto text-brand-green text-[10px] font-medium">Sincronizada</span>
             )}
           </div>
 
-          {/* Letra (scrollable) */}
+          {/* Letra — renderizada por la estrategia activa (Patrón Strategy) */}
           <div ref={lyricsContainerRef} className="flex-1 overflow-y-auto px-4 py-3">
             {displayLines.length > 0 ? (
-              lyricsMode === 'bilingual' ? (
-                // Vista bilingüe: tabla EN | ES
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5">
-                      <th className="text-left text-brand-text text-[10px] font-semibold uppercase pb-2 pr-4 w-1/2">EN</th>
-                      <th className="text-left text-brand-text text-[10px] font-semibold uppercase pb-2 w-1/2">ES</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayLines.map((line, i) => (
-                      <tr
-                        key={i}
-                        data-line={i}
-                        onClick={() => handleLineClick(line.text, i)}
-                        className={`cursor-pointer transition-colors ${
-                          i === activeLineIdx
-                            ? 'bg-brand-green/10'
-                            : 'hover:bg-brand-hover/50'
-                        }`}
-                      >
-                        <td className={`py-2 pr-4 text-sm leading-relaxed rounded-l-lg ${
-                          i === activeLineIdx ? 'text-brand-green font-medium' : 'text-white/80'
-                        }`}>
-                          {line.text || ' '}
-                        </td>
-                        <td className="py-2 text-sm leading-relaxed text-brand-text rounded-r-lg">
-                          {translations[i] || <span className="opacity-30">—</span>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : lyricsMode === 'es-only' ? (
-                // Solo traducciones
-                <div className="space-y-1">
-                  {displayLines.map((line, i) => (
-                    <p key={i} data-line={i} className="py-1.5 px-2 text-sm text-brand-text leading-relaxed">
-                      {translations[i] || <span className="opacity-30">—</span>}
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                // Solo EN o sincronizada
-                <div className="space-y-0.5">
-                  {displayLines.map((line, i) => (
-                    <p
-                      key={i}
-                      data-line={i}
-                      onClick={() => handleLineClick(line.text, i)}
-                      className={`px-3 py-2 rounded-lg cursor-pointer text-sm leading-relaxed transition-all duration-200 ${
-                        i === activeLineIdx
-                          ? 'bg-brand-green/15 text-brand-green font-semibold'
-                          : 'text-white/75 hover:text-white hover:bg-brand-hover/60'
-                      }`}
-                    >
-                      {line.text || ' '}
-                    </p>
-                  ))}
-                </div>
-              )
+              getLyricsStrategy(lyricsMode).render({
+                lines:       displayLines,
+                translations,
+                activeIdx:   activeLineIdx,
+                onLineClick: handleLineClick,
+              })
             ) : (
               <p className="text-brand-text text-sm text-center py-12">
                 No encontramos la letra de esta canción.
