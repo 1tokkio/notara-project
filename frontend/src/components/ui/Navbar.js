@@ -1,17 +1,19 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import notaraLogo from '../../../assets/notara-logo.png';
 
 const styles = {
   nav:          'sticky top-0 z-50 bg-brand-dark/90 backdrop-blur-md border-b border-white/5',
-  inner:        'max-w-none px-5 h-14 flex items-center gap-6',
-  logo:         'flex items-center gap-2 font-bold text-sm mr-2',
+  inner:        'max-w-none px-5 h-14 flex items-center gap-8',
+  logo:         'flex items-center gap-2 font-bold text-sm mr-auto',
   dot:          'w-2 h-2 rounded-full bg-brand-green',
-  logoText:     'text-white font-semibold',
-  navLinks:     'flex items-center gap-1',
-  linkActive:   'px-3 py-1.5 text-sm font-medium text-white',
-  linkInactive: 'px-3 py-1.5 text-sm font-medium text-brand-text hover:text-white transition-colors',
+  logoText:     'text-white font-semibold font-geist text-lg',
+  navLinks:     'flex items-center gap-6',
+  linkActive:   'px-3 py-1.5 text-sm font-medium text-white font-geist',
+  linkInactive: 'px-3 py-1.5 text-sm font-medium text-brand-text hover:text-white transition-colors font-geist',
   spacer:       'flex-1',
   rightArea:    'flex items-center gap-3',
   badge:        'bg-brand-green text-black text-xs font-semibold px-3 py-1 rounded-full',
@@ -45,7 +47,7 @@ export default function Navbar({ lessonBadge }) {
       <div className={styles.inner}>
 
         <Link href="/search" className={styles.logo}>
-          <span className={styles.dot} />
+          <Image src={notaraLogo} alt="Notara Logo" width={72} height={72} className="rounded-sm" />
           <span className={styles.logoText}>Notara</span>
         </Link>
 
