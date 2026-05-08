@@ -95,17 +95,6 @@ export default function SearchPage() {
             <p className={styles.emptySub}>Intenta con otro término de búsqueda</p>
           </div>
         )}
-
-        {!searched && !loading && (
-          <div className={styles.initialState}>
-            <div className={styles.initialDeco}>
-              {DECO_BARS.map((_, i) => (
-                <div key={i} className="h-8 bg-brand-text/30 rounded" />
-              ))}
-            </div>
-            <p className={styles.initialHint}>Escribe al menos 2 caracteres para buscar</p>
-          </div>
-        )}
       </main>
     </div>
   );
