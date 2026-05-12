@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import notaraLogo from '../../../assets/notara-logo.png';
 
 const styles = {
   nav:          'sticky top-0 z-50 bg-brand-dark/90 backdrop-blur-md border-b border-white/5',
@@ -66,7 +67,7 @@ export default function Navbar({ lessonBadge }) {
       <div className={styles.inner}>
 
         <Link href="/search" className={styles.logo}>
-          <span className={styles.dot} />
+          <Image src={notaraLogo} alt="Notara Logo" width={72} height={72} className="rounded-sm" />
           <span className={styles.logoText}>Notara</span>
         </Link>
 

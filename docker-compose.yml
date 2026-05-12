@@ -3,26 +3,43 @@ version: '3.9'
 services:
   # ─── Bases de datos ───────────────────────────────────────────────────────
 
-  postgres:
+  postgres-usuarios:
     image: postgres:16-alpine
-    container_name: linguaflow-postgres
+    container_name: notara-postgres-usuarios
     environment:
-      POSTGRES_DB: linguaflow
+      POSTGRES_DB: notara-usuarios-db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
-      - '5432:5432'
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_usuarios_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-notas-metas:
+    image: postgres:16-alpine
+    container_name: notara-postgres-notas-metas
+    environment:
+      POSTGRES_DB: notara-notas-metas-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5433"
+    volumes:
+      - postgres_notas_metas_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   mongodb:
     image: mongo:7-jammy
-    container_name: linguaflow-mongo
+    container_name: notara-mongo
     ports:
       - '27017:27017'
     volumes:
@@ -35,7 +52,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: linguaflow-redis
+    container_name: notara-redis
     ports:
       - '6379:6379'
     volumes:
@@ -50,27 +67,30 @@ services:
 
   ms-usuarios:
     build: ./ms-usuarios
-    container_name: linguaflow-ms-usuarios
+    container_name: notara-ms-usuarios
     ports:
-      - '3001:8081'
+      - '8081:8081'
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql-elish.alwaysdata.net:5432/elish_notara
-      - SPRING_DATASOURCE_USERNAME=elish_1
-      - SPRING_DATASOURCE_PASSWORD=kbe_3036
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-usuarios:5432/notara-usuarios-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET=${JWT_SECRET}
       - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
-      - MS_USUARIOS_PORT=3001
+      - SERVER_PORT=8081
+      - EUREKA_URL=http://eureka-server:8761/eureka
     depends_on:
-      postgres:
+      postgres-usuarios:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      eureka-server:
         condition: service_healthy
     restart: unless-stopped
 
   ms-canciones:
     build: ./ms-canciones
-    container_name: linguaflow-ms-canciones
+    container_name: notara-ms-canciones
     ports:
       - '3002:3002'
     environment:
@@ -88,13 +108,18 @@ services:
 
   ms-notas-metas:
     build: ./ms-notas-metas
-    container_name: linguaflow-ms-notas-metas
+    container_name: notara-ms-notas-metas
     ports:
-      - '3003:8083'
+      - '8083:8083'
     environment:
       - SERVER_PORT=8083
       - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-notas-metas:5432/notara-notas-metas-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
     depends_on:
+      postgres-notas-metas:
+        condition: service_healthy
       redis:
         condition: service_healthy
       eureka-server:
@@ -103,11 +128,11 @@ services:
 
   api-gateway:
     build: ./api-gateway
-    container_name: linguaflow-gateway
+    container_name: notara-gateway
     ports:
       - '3000:3000'
     environment:
-      - MS_USUARIOS_URL=http://ms-usuarios:3001
+      - MS_USUARIOS_URL=http://ms-usuarios:8081
       - MS_CANCIONES_URL=http://ms-canciones:3002
       - API_GATEWAY_PORT=3000
     depends_on:
@@ -118,7 +143,7 @@ services:
   api-gateway001:
     build: ./api-getaway-001
     ports:
-      - "3006:8086"
+      - "8086:8086"
     environment:
       - EUREKA_URL=http://eureka-server:8761/eureka
     depends_on:
@@ -131,7 +156,7 @@ services:
     restart: unless-stopped
 
 
-#-------------------------------servidor de eureka----------------------------------------------
+  #-------------------------------servidor de eureka----------------------------------------------
   eureka-server:
     build: ./eureka-server
     container_name: eureka-server
@@ -147,6 +172,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  postgres_usuarios_data:
+  postgres_notas_metas_data:
   mongo_data:
   redis_data:
