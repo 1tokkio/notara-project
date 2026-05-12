@@ -69,18 +69,21 @@ export default function Home() {
 
       <main>
 
-        <section className="max-w-5xl mx-auto px-6 pt-28 pb-24 text-center">
-          <p className="text-brand-green text-xs font-semibold uppercase tracking-widest mb-6">
+        <section className="relative max-w-5xl mx-auto px-6 pt-28 pb-24 text-center overflow-hidden">
+          <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none">
+            <div className="w-[600px] h-[600px] rounded-full bg-brand-green/5 blur-3xl" />
+          </div>
+          <p className="animate-fadeIn text-brand-green text-xs font-semibold uppercase tracking-widest mb-6">
             Plataforma de inglés con música
           </p>
-          <h1 className="text-5xl font-bold leading-tight tracking-tight mb-6">
+          <h1 className="animate-fadeIn text-5xl font-bold leading-tight tracking-tight mb-6" style={{ animationDelay: '0.1s' }}>
             Aprendé inglés con<br />
             <span className="text-brand-green">la música que amás</span>
           </h1>
-          <p className="text-brand-text text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+          <p className="animate-fadeIn text-brand-text text-lg max-w-xl mx-auto mb-10 leading-relaxed" style={{ animationDelay: '0.2s' }}>
             Buscá cualquier canción, seleccioná frases de la letra y dejá que la IA te explique el idioma en tiempo real.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="animate-fadeIn flex items-center justify-center gap-3" style={{ animationDelay: '0.3s' }}>
             <Link
               href="/register"
               className="px-6 py-3 bg-brand-green text-black font-semibold rounded-lg hover:bg-brand-green/90 transition-colors"
@@ -98,9 +101,13 @@ export default function Home() {
 
         <section className="border-t border-white/5">
           <div className="max-w-5xl mx-auto px-6 py-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {features.map((f) => (
-              <div key={f.title} className="p-6 rounded-xl border border-white/5 bg-brand-card">
-                <div className="w-8 h-0.5 bg-brand-green rounded mb-5" />
+            {features.map((f, i) => (
+              <div
+                key={f.title}
+                className="animate-fadeIn p-6 rounded-xl border border-white/5 bg-brand-card hover:border-brand-green/20 hover:bg-brand-green/5 transition-all duration-300 group"
+                style={{ animationDelay: `${0.1 * i}s` }}
+              >
+                <div className="w-8 h-0.5 bg-brand-green rounded mb-5 group-hover:w-12 transition-all duration-300" />
                 <h3 className="font-semibold text-white mb-3">{f.title}</h3>
                 <p className="text-brand-text text-sm leading-relaxed">{f.desc}</p>
               </div>

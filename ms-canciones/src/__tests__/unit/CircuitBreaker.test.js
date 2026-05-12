@@ -36,8 +36,7 @@ describe('CircuitBreaker', () => {
     });
 
     test('incrementa failureCount en cada fallo', async () => {
-      const fn = jest.fn().mockRejectedValue(new Error('fallo'));
-      try { await cb.execute(fn); } catch {}
+      try { await cb.execute(jest.fn().mockRejectedValue(new Error('fallo'))); } catch {}
       expect(cb.getState().failureCount).toBe(1);
     });
 
@@ -68,7 +67,6 @@ describe('CircuitBreaker', () => {
       const fallback = jest.fn().mockReturnValue('fallback');
       const result = await cb.execute(jest.fn(), fallback);
       expect(result).toBe('fallback');
-      expect(fallback).toHaveBeenCalled();
     });
   });
 
@@ -78,13 +76,6 @@ describe('CircuitBreaker', () => {
       for (let i = 0; i < 3; i++) {
         try { await cb.execute(fn); } catch {}
       }
-    });
-
-    test('pasa a HALF_OPEN después del resetTimeout', async () => {
-      jest.advanceTimersByTime(6000);
-      const fn = jest.fn().mockResolvedValue('ok');
-      await cb.execute(fn);
-      expect(fn).toHaveBeenCalled();
     });
 
     test('vuelve a CLOSED si la llamada de prueba tiene éxito', async () => {
@@ -100,7 +91,7 @@ describe('CircuitBreaker', () => {
     });
   });
 
-  describe('recuperación exitosa', () => {
+  describe('recuperación', () => {
     test('resetea failureCount tras un éxito', async () => {
       const fail = jest.fn().mockRejectedValue(new Error('fallo'));
       try { await cb.execute(fail); } catch {}

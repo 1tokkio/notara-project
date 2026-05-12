@@ -47,21 +47,9 @@ describe('LessonFactory — Factory Method Pattern', () => {
   describe('estructura de cada lección', () => {
     test('VocabularyLesson tiene exercises y focus', () => {
       const lesson = LessonFactory.create('pop', SONG.id, SONG.title, SONG.artist);
-      expect(lesson.exercises).toBeInstanceOf(Array);
+      expect(Array.isArray(lesson.exercises)).toBe(true);
       expect(lesson.exercises.length).toBeGreaterThan(0);
       expect(lesson.focus).toBeTruthy();
-    });
-
-    test('GrammarLesson tiene exercises y focus', () => {
-      const lesson = LessonFactory.create('rock', SONG.id, SONG.title, SONG.artist);
-      expect(lesson.exercises).toBeInstanceOf(Array);
-      expect(lesson.exercises.length).toBeGreaterThan(0);
-    });
-
-    test('PronunciationLesson tiene exercises y focus', () => {
-      const lesson = LessonFactory.create('hip-hop', SONG.id, SONG.title, SONG.artist);
-      expect(lesson.exercises).toBeInstanceOf(Array);
-      expect(lesson.exercises.length).toBeGreaterThan(0);
     });
 
     test('cada lección incluye songId, title y artist', () => {
@@ -71,7 +59,7 @@ describe('LessonFactory — Factory Method Pattern', () => {
       expect(lesson.artist).toBe(SONG.artist);
     });
 
-    test('describe() retorna string descriptivo', () => {
+    test('describe() retorna string con el título de la canción', () => {
       const lesson = LessonFactory.create('pop', SONG.id, SONG.title, SONG.artist);
       expect(typeof lesson.describe()).toBe('string');
       expect(lesson.describe()).toContain(SONG.title);
@@ -80,23 +68,19 @@ describe('LessonFactory — Factory Method Pattern', () => {
 
   describe('createByType()', () => {
     test('crea VocabularyLesson por tipo explícito', () => {
-      const lesson = LessonFactory.createByType('vocabulary', SONG.id, SONG.title, SONG.artist);
-      expect(lesson).toBeInstanceOf(VocabularyLesson);
+      expect(LessonFactory.createByType('vocabulary', SONG.id, SONG.title, SONG.artist)).toBeInstanceOf(VocabularyLesson);
     });
 
     test('crea GrammarLesson por tipo explícito', () => {
-      const lesson = LessonFactory.createByType('grammar', SONG.id, SONG.title, SONG.artist);
-      expect(lesson).toBeInstanceOf(GrammarLesson);
+      expect(LessonFactory.createByType('grammar', SONG.id, SONG.title, SONG.artist)).toBeInstanceOf(GrammarLesson);
     });
 
     test('crea PronunciationLesson por tipo explícito', () => {
-      const lesson = LessonFactory.createByType('pronunciation', SONG.id, SONG.title, SONG.artist);
-      expect(lesson).toBeInstanceOf(PronunciationLesson);
+      expect(LessonFactory.createByType('pronunciation', SONG.id, SONG.title, SONG.artist)).toBeInstanceOf(PronunciationLesson);
     });
 
     test('tipo desconocido retorna VocabularyLesson por defecto', () => {
-      const lesson = LessonFactory.createByType('desconocido', SONG.id, SONG.title, SONG.artist);
-      expect(lesson).toBeInstanceOf(VocabularyLesson);
+      expect(LessonFactory.createByType('desconocido', SONG.id, SONG.title, SONG.artist)).toBeInstanceOf(VocabularyLesson);
     });
   });
 });

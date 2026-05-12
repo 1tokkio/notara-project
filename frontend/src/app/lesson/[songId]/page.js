@@ -221,8 +221,10 @@ export default function LessonPage() {
 
     try {
       const data = await ia.explain(songId, line);
-      const reply = data.explanation || data.translation || 'No se pudo obtener la explicación.';
-      setTranslations(prev => ({ ...prev, [idx]: data.translation || reply }));
+      const reply = data.significado
+        ? `${data.significado}${data.gramatica ? `\n\n${data.gramatica}` : ''}${data.ejemplo ? `\n\nEjemplo: ${data.ejemplo}` : ''}`
+        : data.explanation || 'No se pudo obtener la explicación.';
+      setTranslations(prev => ({ ...prev, [idx]: data.significado || reply }));
       setChatMessages(prev => [...prev, { role: 'ai', content: reply }]);
     } catch {
       setChatMessages(prev => [...prev, { role: 'ai', content: 'No se pudo obtener la explicación en este momento.' }]);
@@ -241,7 +243,7 @@ export default function LessonPage() {
 
     try {
       const data = await ia.chat(songId, message, chatMessages.filter(m => m.role !== 'ai' || m.content !== chatMessages[0].content));
-      setChatMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
+      setChatMessages(prev => [...prev, { role: 'ai', content: data.response || data.reply || 'Sin respuesta.' }]);
     } catch {
       setChatMessages(prev => [...prev, { role: 'ai', content: 'Error al responder. Intenta de nuevo.' }]);
     } finally {
@@ -359,8 +361,8 @@ export default function LessonPage() {
                 onClick={() => setLyricsMode(strategy.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   lyricsMode === strategy.id
-                    ? 'bg-brand-hover text-white'
-                    : 'text-brand-text hover:text-white'
+                    ? 'bg-brand-green/20 text-brand-green font-semibold border border-brand-green/30'
+                    : 'text-brand-text hover:text-white hover:bg-brand-hover'
                 }`}
               >
                 {strategy.label}
