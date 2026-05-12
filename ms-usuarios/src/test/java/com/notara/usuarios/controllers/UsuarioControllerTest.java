@@ -33,7 +33,7 @@ public class UsuarioControllerTest {
 
     @Test
     void listarUsuarios() throws Exception {
-        Usuario usuario = new Usuario(1L, "Juan", "Perez", "juan@test.com", "1234");
+        Usuario usuario = new Usuario(1L, "Juan", "juan@test.com", "1234");
 
         when(usuarioService.obtenerUsuarios()).thenReturn(List.of(usuario));
 
@@ -44,7 +44,7 @@ public class UsuarioControllerTest {
 
     @Test
     void crearUsuario() throws Exception {
-        Usuario usuario = new Usuario(null, "Juan", "Perez", "juan@test.com", "1234");
+        Usuario usuario = new Usuario(null, "Juan", "juan@test.com", "1234");
 
         when(usuarioService.guardarUsuario(Mockito.any())).thenReturn(usuario);
 

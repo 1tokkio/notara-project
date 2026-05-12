@@ -7,7 +7,7 @@ const registerIaRoutes = require('./routes/ia');
 
 const app = express();
 
-const MS_USUARIOS_URL  = process.env.MS_USUARIOS_URL  || 'http://localhost:3001';
+const MS_USUARIOS_URL  = process.env.MS_USUARIOS_URL  || 'http://localhost:8081';
 const MS_CANCIONES_URL = process.env.MS_CANCIONES_URL || 'http://localhost:3002';
 const PORT             = process.env.API_GATEWAY_PORT  || 3000;
 

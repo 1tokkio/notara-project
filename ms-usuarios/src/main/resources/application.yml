@@ -36,10 +36,10 @@ spring:
 
 # ── Seguridad JWT ─────────────────────────────
 jwt:
-  secret: ${JWT_SECRET:cambia_esto_por_un_string_largo_y_seguro}
-  expiration-ms: ${JWT_EXPIRATION_MS:900000}
-  refresh-secret: ${JWT_REFRESH_SECRET:otro_string_largo_y_seguro}
-  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  secret: "hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif"
+  expiration-ms: 900000
+  refresh-secret: "fny4fgy34f6u8gy549t9yr87ufh09w3rfy390ftdf4tfue49"
+  refresh-expiration-ms: 604800000
 
 # ── Eureka ───────────────────────────────────
 eureka:
