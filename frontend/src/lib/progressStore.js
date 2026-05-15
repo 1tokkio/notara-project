@@ -1,5 +1,6 @@
 const KEY = 'notara_progress';
 const RECENT_KEY = 'notara_recent_songs';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function emit() {
@@ -19,6 +20,7 @@ export function getProgress() {
 function save(p) {
   localStorage.setItem(KEY, JSON.stringify(p));
   emit();
+  syncToBackend(p);
 }
 
 function refreshStreak(p) {
@@ -29,6 +31,48 @@ function refreshStreak(p) {
   p.lastStudyDate = today;
   p.exercisesToday = 0;
   return p;
+}
+
+// Fusiona stats del backend sobre el local, tomando el valor más alto
+export function mergeFromBackend(data) {
+  if (!data) return;
+  try {
+    const local = getProgress();
+    const merged = {
+      ...local,
+      xp:            Math.max(local.xp || 0,            data.xp || 0),
+      streak:        Math.max(local.streak || 0,        data.streak || 0),
+      wordsTotal:    Math.max(local.wordsTotal || 0,    data.wordsTotal || 0),
+      songsCompleted:Math.max(local.songsCompleted || 0,data.songsCompleted || 0),
+    };
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    emit();
+  } catch {}
+}
+
+// Envía el progreso al backend de forma silenciosa (fire-and-forget)
+function syncToBackend(p) {
+  if (typeof window === 'undefined') return;
+  try {
+    const token = localStorage.getItem('access_token');
+    if (!token) return;
+    fetch(`${API_URL}/progress/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        xp:             p.xp || 0,
+        streak:         p.streak || 0,
+        wordsTotal:     p.wordsTotal || 0,
+        songsCompleted: p.songsCompleted || 0,
+        exercisesToday: p.exercisesToday || 0,
+        lastStudyDate:  p.lastStudyDate || '',
+        completedSongIds: JSON.stringify(p.completedSongIds || []),
+      }),
+    }).catch(() => {});
+  } catch {}
 }
 
 export function addXP(amount) {

@@ -2,10 +2,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { songs as songsApi, progress as progressApi, ia } from '../../../lib/api';
-import { addXP, recordWordLearned, recordSongCompleted, addRecentSong, getProgress } from '../../../lib/progressStore';
+import { addXP, recordWordLearned, recordSongCompleted, addRecentSong, getProgress, mergeFromBackend } from '../../../lib/progressStore';
 import Navbar from '../../../components/ui/Navbar';
 import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
-// Patrón Strategy: cada modo de letra es una estrategia intercambiable
 import { LYRICS_STRATEGIES, getLyricsStrategy } from '../../../patterns/LyricsDisplayStrategy';
 
 const EXERCISE_CARDS = [
@@ -58,11 +57,12 @@ function SectionLabel({ children }) {
   );
 }
 
-function ExerciseCard({ badge, color, title, desc, onClick }) {
+function ExerciseCard({ badge, color, title, desc, onClick, disabled }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-3 rounded-xl bg-brand-hover hover:bg-white/5 border border-white/5 transition-colors group"
+      disabled={disabled}
+      className="w-full text-left p-3 rounded-xl bg-brand-hover hover:bg-white/5 border border-white/5 transition-colors group disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${BADGE_COLORS[color]}`}>
         {badge}
@@ -72,6 +72,152 @@ function ExerciseCard({ badge, color, title, desc, onClick }) {
       </p>
       <p className="text-brand-text text-xs mt-0.5">{desc}</p>
     </button>
+  );
+}
+
+function ExercisePanel({ exercises, onClose, onXP }) {
+  const [idx, setIdx]       = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [result, setResult] = useState(null);
+  const [score, setScore]   = useState(0);
+  const [done, setDone]     = useState(false);
+
+  const exercise = exercises[idx];
+
+  const handleOptionClick = (option) => {
+    if (result) return;
+    const correct = option === exercise.answer;
+    setResult({ correct, explanation: exercise.explanation });
+    if (correct) { setScore(s => s + 1); onXP(10); }
+  };
+
+  const handleTextSubmit = () => {
+    if (!answer.trim() || result) return;
+    const correct = answer.toLowerCase().trim() === (exercise.answer || '').toLowerCase().trim();
+    setResult({ correct, explanation: exercise.explanation });
+    if (correct) { setScore(s => s + 1); onXP(10); }
+  };
+
+  const handleNext = () => {
+    if (idx + 1 >= exercises.length) {
+      setDone(true);
+    } else {
+      setIdx(i => i + 1);
+      setAnswer('');
+      setResult(null);
+    }
+  };
+
+  if (done) {
+    return (
+      <div className="p-4 rounded-xl border border-white/10 bg-brand-card text-center space-y-3">
+        <div className="w-10 h-10 rounded-full bg-brand-green/20 flex items-center justify-center mx-auto">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 text-brand-green">
+            <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <p className="text-white font-semibold text-sm">Ejercicios completados</p>
+        <p className="text-brand-text text-xs">{score}/{exercises.length} correctas · +{score * 10} XP</p>
+        <button
+          onClick={onClose}
+          className="w-full py-2 rounded-lg bg-brand-hover border border-white/10 text-white text-sm hover:bg-brand-card transition-colors"
+        >
+          Volver a ejercicios
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 rounded-xl border border-white/10 bg-brand-card space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-[10px] font-semibold text-brand-text uppercase tracking-widest">
+          Ejercicio {idx + 1}/{exercises.length}
+        </p>
+        <button onClick={onClose} className="text-brand-text hover:text-white text-xs transition-colors">✕</button>
+      </div>
+
+      {/* Tipo */}
+      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+        exercise.type === 'multiple-choice' ? BADGE_COLORS.green :
+        exercise.type === 'fill-blank'      ? BADGE_COLORS.purple :
+        BADGE_COLORS.orange
+      }`}>
+        {exercise.type === 'multiple-choice' ? 'Opción múltiple' :
+         exercise.type === 'fill-blank'      ? 'Completar' : 'Traducción'}
+      </span>
+
+      {/* Pregunta */}
+      <p className="text-white text-sm font-medium leading-snug">{exercise.question}</p>
+
+      {/* Opciones múltiples */}
+      {exercise.type === 'multiple-choice' && (
+        <div className="space-y-2">
+          {(exercise.options || []).map((opt, i) => {
+            let cls = 'w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ';
+            if (!result)
+              cls += 'border-white/10 text-brand-text hover:border-brand-green/50 hover:text-white cursor-pointer';
+            else if (opt === exercise.answer)
+              cls += 'border-brand-green bg-brand-green/10 text-brand-green';
+            else
+              cls += 'border-white/5 text-brand-text opacity-40 cursor-default';
+            return (
+              <button key={i} className={cls} onClick={() => handleOptionClick(opt)}>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Respuesta de texto */}
+      {(exercise.type === 'fill-blank' || exercise.type === 'translation') && (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={answer}
+            onChange={e => setAnswer(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleTextSubmit()}
+            disabled={!!result}
+            placeholder="Tu respuesta..."
+            className="w-full bg-brand-hover border border-white/5 rounded-lg px-3 py-2 text-white text-sm placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors disabled:opacity-60"
+          />
+          {!result && (
+            <button
+              onClick={handleTextSubmit}
+              disabled={!answer.trim()}
+              className="w-full py-2 rounded-lg bg-brand-purple text-white text-sm hover:bg-violet-500 transition-colors disabled:opacity-40"
+            >
+              Verificar
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Resultado */}
+      {result && (
+        <div className={`p-3 rounded-lg border text-sm ${result.correct
+          ? 'bg-brand-green/10 border-brand-green/20 text-brand-green'
+          : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
+        >
+          <p className="font-semibold">{result.correct ? '¡Correcto! +10 XP' : 'Incorrecto'}</p>
+          {result.explanation && (
+            <p className="text-brand-text text-xs mt-1 font-normal">{result.explanation}</p>
+          )}
+        </div>
+      )}
+
+      {/* Siguiente */}
+      {result && (
+        <button
+          onClick={handleNext}
+          className="w-full py-2 rounded-lg bg-brand-hover border border-white/10 text-white text-sm hover:bg-brand-card transition-colors"
+        >
+          {idx + 1 >= exercises.length ? 'Ver resultado' : 'Siguiente →'}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -96,30 +242,29 @@ export default function LessonPage() {
   const { songId } = useParams();
   const router     = useRouter();
 
-  // Datos de la canción
-  const [song, setSong]           = useState(null);
+  const [song, setSong]             = useState(null);
   const [lyricsData, setLyricsData] = useState(null);
   const [parsedLines, setParsedLines] = useState([]);
   const [lessonInfo, setLessonInfo] = useState(null);
-  const [stats, setStats]         = useState(null);
+  const [stats, setStats]           = useState(null);
   const [relatedSongs, setRelatedSongs] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
 
-  // Reproducción
   const [currentTime, setCurrentTime] = useState(0);
   const [activeLineIdx, setActiveLineIdx] = useState(-1);
   const lyricsContainerRef = useRef(null);
 
-  // Patrón Strategy: estrategia activa de visualización de letra
   const [lyricsMode, setLyricsMode] = useState('en-only');
   const [translations, setTranslations] = useState({});
   const [keywords, setKeywords]     = useState([]);
-
-  // Completar lección
   const [lessonDone, setLessonDone] = useState(false);
 
-  // Chat embebido
+  // Última frase seleccionada — activa los ejercicios
+  const [lastPhrase, setLastPhrase]     = useState('');
+  const [exerciseSet, setExerciseSet]   = useState(null);
+  const [exerciseLoading, setExerciseLoading] = useState(false);
+
   const [chatMessages, setChatMessages] = useState([
     { role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' },
   ]);
@@ -127,7 +272,6 @@ export default function LessonPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Reset de chat, traducciones y estado al cambiar de canción
   useEffect(() => {
     setChatMessages([{ role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' }]);
     setTranslations({});
@@ -135,9 +279,10 @@ export default function LessonPage() {
     setKeywords([]);
     setActiveLineIdx(-1);
     setLessonDone(false);
+    setLastPhrase('');
+    setExerciseSet(null);
   }, [songId]);
 
-  // Carga inicial
   useEffect(() => {
     if (!songId) return;
 
@@ -155,7 +300,6 @@ export default function LessonPage() {
         if (songData) {
           setSong(songData);
           addRecentSong(songData);
-          // Buscar canciones relacionadas del mismo artista
           songsApi.search(songData.artist, 4)
             .then((d) => setRelatedSongs((d.results || []).filter(s => s.spotifyId !== songId).slice(0, 3)))
             .catch(() => {});
@@ -170,7 +314,6 @@ export default function LessonPage() {
         if (lessonRes.status === 'fulfilled') {
           const lesson = lessonRes.value?.lesson;
           setLessonInfo(lesson);
-          // Extraer palabras clave de los ejercicios del LLM si están disponibles
           if (lesson?.exercises?.length) {
             const kw = lesson.exercises
               .filter(e => e.targetWord)
@@ -184,8 +327,15 @@ export default function LessonPage() {
           }
         }
 
+        // Fusionar stats del backend con el progreso local
+        if (statsRes.status === 'fulfilled' && statsRes.value) {
+          mergeFromBackend(statsRes.value);
+        }
         const localProgress = getProgress();
-        setStats(statsRes.status === 'fulfilled' ? { ...localProgress, ...statsRes.value } : localProgress);
+        setStats(statsRes.status === 'fulfilled' && statsRes.value
+          ? { ...localProgress, ...statsRes.value }
+          : localProgress
+        );
       } catch {
         setError('Error al cargar la canción');
       } finally {
@@ -196,16 +346,13 @@ export default function LessonPage() {
     load();
   }, [songId]);
 
-  // Sincronización de letra con el player
   useEffect(() => {
     if (!parsedLines.length) return;
-
     let idx = -1;
     for (let i = 0; i < parsedLines.length; i++) {
       if (parsedLines[i].time <= currentTime) idx = i;
       else break;
     }
-
     if (idx !== activeLineIdx) {
       setActiveLineIdx(idx);
       const el = lyricsContainerRef.current?.querySelector(`[data-line="${idx}"]`);
@@ -213,25 +360,22 @@ export default function LessonPage() {
     }
   }, [currentTime, parsedLines, activeLineIdx]);
 
-  // Auto-scroll del chat
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   const handleTimeUpdate = useCallback((seconds) => setCurrentTime(seconds), []);
 
-  // Clic en una línea de letra → traduce y abre chat contextual
   const handleLineClick = async (line, idx) => {
     if (!line.trim()) return;
+    setLastPhrase(line);
 
-    // Si ya hay traducción, solo mostrarla en chat
     if (translations[idx]) {
       setChatMessages(prev => [...prev, { role: 'user', content: `¿Qué significa "${line}"?` }]);
       setChatMessages(prev => [...prev, { role: 'ai', content: translations[idx] }]);
       return;
     }
 
-    // Obtener explicación del backend
     setChatMessages(prev => [...prev, { role: 'user', content: `¿Qué significa "${line}"?` }]);
     setChatLoading(true);
 
@@ -250,7 +394,26 @@ export default function LessonPage() {
     }
   };
 
-  // Enviar mensaje de chat libre
+  const handleExerciseStart = async () => {
+    if (!lastPhrase) {
+      setChatMessages(prev => [...prev,
+        { role: 'ai', content: 'Primero tocá una línea de la letra para seleccionarla y luego elegí el ejercicio.' },
+      ]);
+      return;
+    }
+    setExerciseLoading(true);
+    try {
+      const data = await ia.getExercises(songId, lastPhrase);
+      setExerciseSet(data.exercises || []);
+    } catch {
+      setChatMessages(prev => [...prev,
+        { role: 'ai', content: 'No se pudieron generar ejercicios. Intentá de nuevo.' },
+      ]);
+    } finally {
+      setExerciseLoading(false);
+    }
+  };
+
   const handleChatSend = async () => {
     if (!chatInput.trim() || chatLoading) return;
     const message = chatInput.trim();
@@ -274,8 +437,6 @@ export default function LessonPage() {
     : (lyricsData?.lyrics && !lyricsData.synced)
       ? lyricsData.lyrics.split('\n').filter(l => l.trim()).map(text => ({ text, time: null }))
       : [];
-
-  // ─── Estados de carga / error ─────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -304,8 +465,6 @@ export default function LessonPage() {
     );
   }
 
-  // ─── Layout principal ─────────────────────────────────────────────────────
-
   return (
     <div className="h-screen flex flex-col bg-brand-dark overflow-hidden">
       <Navbar lessonBadge={lessonInfo?.type ? capitalize(lessonInfo.type) : undefined} />
@@ -315,7 +474,6 @@ export default function LessonPage() {
         {/* ═══════════════ COLUMNA IZQUIERDA ═══════════════ */}
         <aside className="w-60 flex-shrink-0 flex flex-col border-r border-white/5 overflow-y-auto p-4 space-y-5">
 
-          {/* Player */}
           <div>
             <SectionLabel>Reproduciendo</SectionLabel>
             {song.imageUrl && (
@@ -335,7 +493,6 @@ export default function LessonPage() {
             </div>
           </div>
 
-          {/* Tipo de lección */}
           {lessonInfo && (
             <div>
               <SectionLabel>Tipo de lección</SectionLabel>
@@ -348,7 +505,6 @@ export default function LessonPage() {
             </div>
           )}
 
-          {/* Palabras clave */}
           {keywords.length > 0 && (
             <div className="flex-1">
               <SectionLabel>Palabras clave</SectionLabel>
@@ -371,7 +527,6 @@ export default function LessonPage() {
         {/* ═══════════════ COLUMNA CENTRAL ═══════════════ */}
         <main className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
 
-          {/* Toggles — cada botón selecciona una estrategia de visualización (Patrón Strategy) */}
           <div className="flex-shrink-0 flex items-center gap-1 px-4 py-3 border-b border-white/5">
             {LYRICS_STRATEGIES.map((strategy) => (
               <button
@@ -391,7 +546,6 @@ export default function LessonPage() {
             )}
           </div>
 
-          {/* Letra — renderizada por la estrategia activa (Patrón Strategy) */}
           <div ref={lyricsContainerRef} className="flex-1 overflow-y-auto px-4 py-3">
             {displayLines.length > 0 ? (
               getLyricsStrategy(lyricsMode).render({
@@ -486,19 +640,38 @@ export default function LessonPage() {
           {/* Ejercicios */}
           <div>
             <SectionLabel>Ejercicios</SectionLabel>
-            <div className="space-y-2">
-              {EXERCISE_CARDS.map((ex, i) => (
-                <ExerciseCard
-                  key={i}
-                  {...ex}
-                  onClick={() => setChatMessages(prev => [
-                    ...prev,
-                    { role: 'user', content: `Quiero practicar: ${ex.title}` },
-                    { role: 'ai',   content: `Vamos a practicar "${ex.title}". Selecciona una frase de la letra para empezar.` },
-                  ])}
-                />
-              ))}
-            </div>
+
+            {exerciseSet ? (
+              <ExercisePanel
+                exercises={exerciseSet}
+                onClose={() => setExerciseSet(null)}
+                onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
+              />
+            ) : (
+              <div className="space-y-2">
+                {EXERCISE_CARDS.map((ex, i) => (
+                  <ExerciseCard
+                    key={i}
+                    {...ex}
+                    disabled={exerciseLoading}
+                    onClick={handleExerciseStart}
+                  />
+                ))}
+                {exerciseLoading && (
+                  <p className="text-brand-text text-xs text-center py-1 animate-pulse">Generando ejercicios...</p>
+                )}
+                {!lastPhrase && !exerciseLoading && (
+                  <p className="text-brand-text text-[10px] text-center pt-1 opacity-70">
+                    Tocá una línea de la letra para activar los ejercicios
+                  </p>
+                )}
+                {lastPhrase && !exerciseLoading && (
+                  <p className="text-brand-green text-[10px] text-center pt-1">
+                    Frase seleccionada · elegí un ejercicio
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Tu progreso */}
@@ -560,11 +733,6 @@ export default function LessonPage() {
                       <p className="text-white text-xs font-medium truncate group-hover:text-brand-green transition-colors">{s.title}</p>
                       <p className="text-brand-text text-[10px] truncate">{s.artist}</p>
                     </div>
-                    {s.lessonType && (
-                      <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${BADGE_COLORS[s.lessonType === 'vocabulary' ? 'green' : s.lessonType === 'grammar' ? 'purple' : 'orange']}`}>
-                        {capitalize(s.lessonType)}
-                      </span>
-                    )}
                   </button>
                 ))}
               </div>

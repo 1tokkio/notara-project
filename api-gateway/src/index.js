@@ -76,9 +76,10 @@ const proxyOptions = (target, serviceName) => ({
   },
 });
 
-app.use('/auth',  createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
-app.use('/users', createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
-app.use('/songs', createProxyMiddleware(proxyOptions(MS_CANCIONES_URL, 'ms-canciones')));
+app.use('/auth',     createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
+app.use('/users',    createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
+app.use('/progress', createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
+app.use('/songs',    createProxyMiddleware(proxyOptions(MS_CANCIONES_URL, 'ms-canciones')));
 
 app.use((req, res) => {
   res.status(404).json({
