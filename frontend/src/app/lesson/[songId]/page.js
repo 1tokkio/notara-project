@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { songs as songsApi, progress as progressApi, ia } from '../../../lib/api';
 import Navbar from '../../../components/ui/Navbar';
-import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
-// Patrón Strategy: cada modo de letra es una estrategia intercambiable
+import AudioPlayer from '../../../components/ui/AudioPlayer';
+import ExercisePanel from '../../../components/lesson/ExercisePanel';
 import { LYRICS_STRATEGIES, getLyricsStrategy } from '../../../patterns/LyricsDisplayStrategy';
 
 const EXERCISE_CARDS = [
@@ -123,6 +123,18 @@ export default function LessonPage() {
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef(null);
 
+  // Ejercicio activo — reemplaza la columna central cuando está abierto
+  const [activeExercise, setActiveExercise] = useState(null);
+  const [lastClickedPhrase, setLastClickedPhrase] = useState('');
+
+  const addXP = useCallback((amount) => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('notara_progress') || '{}');
+      stored.xp = (stored.xp || 0) + amount;
+      localStorage.setItem('notara_progress', JSON.stringify(stored));
+    } catch {}
+  }, []);
+
   // Carga inicial
   useEffect(() => {
     if (!songId) return;
@@ -207,8 +219,8 @@ export default function LessonPage() {
   // Clic en una línea de letra → traduce y abre chat contextual
   const handleLineClick = async (line, idx) => {
     if (!line.trim()) return;
+    setLastClickedPhrase(line);
 
-    // Si ya hay traducción, solo mostrarla en chat
     if (translations[idx]) {
       setChatMessages(prev => [...prev, { role: 'user', content: `¿Qué significa "${line}"?` }]);
       setChatMessages(prev => [...prev, { role: 'ai', content: translations[idx] }]);
@@ -313,7 +325,11 @@ export default function LessonPage() {
               <p className="text-brand-text text-xs truncate opacity-60 mt-0.5">{song.album}</p>
             )}
             <div className="mt-3">
-              <SpotifyEmbedPlayer spotifyId={songId} onTimeUpdate={handleTimeUpdate} />
+              <AudioPlayer
+                previewUrl={song.previewUrl}
+                spotifyId={songId}
+                songTitle={song.title}
+              />
             </div>
           </div>
 
@@ -353,84 +369,95 @@ export default function LessonPage() {
         {/* ═══════════════ COLUMNA CENTRAL ═══════════════ */}
         <main className="flex-1 flex flex-col overflow-hidden border-r border-white/5">
 
-          {/* Toggles — cada botón selecciona una estrategia de visualización (Patrón Strategy) */}
-          <div className="flex-shrink-0 flex items-center gap-1 px-4 py-3 border-b border-white/5">
-            {LYRICS_STRATEGIES.map((strategy) => (
-              <button
-                key={strategy.id}
-                onClick={() => setLyricsMode(strategy.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  lyricsMode === strategy.id
-                    ? 'bg-brand-green/20 text-brand-green font-semibold border border-brand-green/30'
-                    : 'text-brand-text hover:text-white hover:bg-brand-hover'
-                }`}
-              >
-                {strategy.label}
-              </button>
-            ))}
-            {lyricsData?.synced && (
-              <span className="ml-auto text-brand-green text-[10px] font-medium">Sincronizada</span>
-            )}
-          </div>
+          {activeExercise ? (
+            <ExercisePanel
+              songId={songId}
+              phrase={lastClickedPhrase}
+              exerciseType={activeExercise}
+              onClose={() => setActiveExercise(null)}
+              onXP={addXP}
+            />
+          ) : (
+            <>
+              {/* Toggles — Patrón Strategy */}
+              <div className="flex-shrink-0 flex items-center gap-1 px-4 py-3 border-b border-white/5">
+                {LYRICS_STRATEGIES.map((strategy) => (
+                  <button
+                    key={strategy.id}
+                    onClick={() => setLyricsMode(strategy.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                      lyricsMode === strategy.id
+                        ? 'bg-brand-green/20 text-brand-green font-semibold border border-brand-green/30'
+                        : 'text-brand-text hover:text-white hover:bg-brand-hover'
+                    }`}
+                  >
+                    {strategy.label}
+                  </button>
+                ))}
+                {lyricsData?.synced && (
+                  <span className="ml-auto text-brand-green text-[10px] font-medium">Sincronizada</span>
+                )}
+              </div>
 
-          {/* Letra — renderizada por la estrategia activa (Patrón Strategy) */}
-          <div ref={lyricsContainerRef} className="flex-1 overflow-y-auto px-4 py-3">
-            {displayLines.length > 0 ? (
-              getLyricsStrategy(lyricsMode).render({
-                lines:       displayLines,
-                translations,
-                activeIdx:   activeLineIdx,
-                onLineClick: handleLineClick,
-              })
-            ) : (
-              <p className="text-brand-text text-sm text-center py-12">
-                No encontramos la letra de esta canción.
-              </p>
-            )}
-          </div>
+              {/* Letra */}
+              <div ref={lyricsContainerRef} className="flex-1 overflow-y-auto px-4 py-3">
+                {displayLines.length > 0 ? (
+                  getLyricsStrategy(lyricsMode).render({
+                    lines:       displayLines,
+                    translations,
+                    activeIdx:   activeLineIdx,
+                    onLineClick: handleLineClick,
+                  })
+                ) : (
+                  <p className="text-brand-text text-sm text-center py-12">
+                    No encontramos la letra de esta canción.
+                  </p>
+                )}
+              </div>
 
-          {/* Chat embebido */}
-          <div className="flex-shrink-0 border-t border-white/5 flex flex-col max-h-56">
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'ai' ? (
-                    <p className="text-brand-text text-sm max-w-[85%]">{msg.content}</p>
-                  ) : (
-                    <span className="bg-brand-purple text-white text-sm px-3 py-1.5 rounded-xl max-w-[85%]">
-                      {msg.content}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {chatLoading && (
-                <div className="flex gap-1 px-1">
-                  {[0, 1, 2].map(i => (
-                    <div key={i} className="w-1.5 h-1.5 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+              {/* Chat embebido */}
+              <div className="flex-shrink-0 border-t border-white/5 flex flex-col max-h-56">
+                <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      {msg.role === 'ai' ? (
+                        <p className="text-brand-text text-sm max-w-[85%]">{msg.content}</p>
+                      ) : (
+                        <span className="bg-brand-purple text-white text-sm px-3 py-1.5 rounded-xl max-w-[85%]">
+                          {msg.content}
+                        </span>
+                      )}
+                    </div>
                   ))}
+                  {chatLoading && (
+                    <div className="flex gap-1 px-1">
+                      {[0, 1, 2].map(i => (
+                        <div key={i} className="w-1.5 h-1.5 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                      ))}
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className="flex gap-2 px-4 pb-3">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                placeholder="Pregúntale a la IA sobre la letra..."
-                className="flex-1 bg-brand-hover border border-white/5 rounded-xl px-4 py-2 text-white text-sm placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
-              />
-              <button
-                onClick={handleChatSend}
-                disabled={!chatInput.trim() || chatLoading}
-                className="w-9 h-9 rounded-xl bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-sm"
-              >
-                &#10148;
-              </button>
-            </div>
-          </div>
+                <div className="flex gap-2 px-4 pb-3">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                    placeholder="Pregúntale a la IA sobre la letra..."
+                    className="flex-1 bg-brand-hover border border-white/5 rounded-xl px-4 py-2 text-white text-sm placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
+                  />
+                  <button
+                    onClick={handleChatSend}
+                    disabled={!chatInput.trim() || chatLoading}
+                    className="w-9 h-9 rounded-xl bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-sm"
+                  >
+                    &#10148;
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
         </main>
 
@@ -445,11 +472,7 @@ export default function LessonPage() {
                 <ExerciseCard
                   key={i}
                   {...ex}
-                  onClick={() => setChatMessages(prev => [
-                    ...prev,
-                    { role: 'user', content: `Quiero practicar: ${ex.title}` },
-                    { role: 'ai',   content: `Vamos a practicar "${ex.title}". Selecciona una frase de la letra para empezar.` },
-                  ])}
+                  onClick={() => setActiveExercise(ex.title)}
                 />
               ))}
             </div>
