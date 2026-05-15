@@ -1,0 +1,39 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: api-gateway001
+
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+
+            - id: ruta-usuarios
+              uri: http://ms-usuarios:8081
+              predicates:
+                - Path=/api/usuarios/**
+              filters:
+                - StripPrefix=1
+
+            - id: ruta-metas
+              uri: http://ms-notas-metas:8083
+              predicates:
+                - Path=/api/metas/**
+              filters:
+                - StripPrefix=1
+
+            - id: ruta-notas
+              uri: http://ms-notas-metas:8083
+              predicates:
+                - Path=/api/notas/**
+              filters:
+                - StripPrefix=1
+
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka}
