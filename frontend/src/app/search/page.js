@@ -1,10 +1,14 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { songs as songsApi } from '../../lib/api';
+import { getRecentSongs } from '../../lib/progressStore';
 import Navbar from '../../components/ui/Navbar';
 import SearchBar from '../../components/ui/SearchBar';
 import SongCard from '../../components/ui/SongCard';
+
+const GENRES = ['Pop', 'Rock', 'Hip-Hop', 'R&B', 'Reggaeton', 'Electrónica', 'Jazz', 'K-Pop', 'Indie', 'Country'];
 
 const styles = {
   page:        'min-h-screen bg-brand-dark',
@@ -20,20 +24,23 @@ const styles = {
   emptyState:  'text-center py-16 animate-fadeIn',
   emptyTitle:  'text-white font-medium mt-4',
   emptySub:    'text-brand-text text-sm mt-1',
-  initialState:'text-center py-16',
-  initialDeco: 'grid grid-cols-3 gap-4 max-w-xs mx-auto mb-8 opacity-20',
-  initialHint: 'text-brand-text',
+  sectionLabel:'text-brand-text text-xs font-semibold uppercase tracking-widest mb-3',
 };
-
-const DECO_BARS = [1, 2, 3, 4, 5, 6];
 
 export default function SearchPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [error, setError]     = useState('');
+  const [results, setResults]     = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [searched, setSearched]   = useState(false);
+  const [error, setError]         = useState('');
+  const [recentSongs, setRecentSongs] = useState([]);
+  const [externalQuery, setExternalQuery] = useState('');
+
+  useEffect(() => {
+    setRecentSongs(getRecentSongs());
+  }, []);
 
   const handleSearch = useCallback(async (query) => {
     if (!query) {
@@ -41,10 +48,8 @@ export default function SearchPage() {
       setSearched(false);
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
       const data = await songsApi.search(query);
       setResults(data.results || []);
@@ -56,6 +61,11 @@ export default function SearchPage() {
       setLoading(false);
     }
   }, []);
+
+  const handleGenreClick = (genre) => {
+    setExternalQuery(genre);
+    handleSearch(genre);
+  };
 
   return (
     <div className={styles.page}>
@@ -71,7 +81,7 @@ export default function SearchPage() {
         </div>
 
         <div className={styles.searchRow}>
-          <SearchBar onSearch={handleSearch} loading={loading} />
+          <SearchBar onSearch={handleSearch} loading={loading} externalQuery={externalQuery} />
         </div>
 
         {error && <div className={styles.errorBox}>{error}</div>}
@@ -97,13 +107,42 @@ export default function SearchPage() {
         )}
 
         {!searched && !loading && (
-          <div className={styles.initialState}>
-            <div className={styles.initialDeco}>
-              {DECO_BARS.map((_, i) => (
-                <div key={i} className="h-8 bg-brand-text/30 rounded" />
-              ))}
+          <div className="animate-fadeIn space-y-10">
+
+            {/* Géneros */}
+            <div>
+              <p className={styles.sectionLabel}>Explorar por género</p>
+              <div className="flex flex-wrap gap-2">
+                {GENRES.map((genre) => (
+                  <button
+                    key={genre}
+                    onClick={() => handleGenreClick(genre)}
+                    className="px-4 py-1.5 rounded-full border border-white/10 text-brand-text text-sm hover:border-brand-green/50 hover:text-brand-green hover:bg-brand-green/5 transition-all"
+                  >
+                    {genre}
+                  </button>
+                ))}
+              </div>
             </div>
-            <p className={styles.initialHint}>Escribe al menos 2 caracteres para buscar</p>
+
+            {/* Canciones recientes */}
+            {recentSongs.length > 0 && (
+              <div>
+                <p className={styles.sectionLabel}>Estudiadas recientemente</p>
+                <div className="space-y-2">
+                  {recentSongs.slice(0, 5).map((song) => (
+                    <SongCard key={song.spotifyId} song={song} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {recentSongs.length === 0 && (
+              <div className="text-center py-6">
+                <p className="text-brand-text text-sm">Escribe al menos 2 caracteres o selecciona un género para buscar</p>
+              </div>
+            )}
+
           </div>
         )}
       </main>

@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # ─── Bases de datos ───────────────────────────────────────────────────────
 
@@ -138,6 +136,17 @@ services:
     depends_on:
       - ms-usuarios
       - ms-canciones
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: notara-frontend
+    ports:
+      - '3001:3001'
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    depends_on:
+      - api-gateway
     restart: unless-stopped
 
   api-gateway001:

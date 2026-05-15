@@ -11,9 +11,17 @@ const styles = {
 };
 
 // Espera 500 ms tras el último keystroke para no saturar el backend
-export default function SearchBar({ onSearch, loading }) {
+export default function SearchBar({ onSearch, loading, externalQuery }) {
   const [query, setQuery] = useState('');
   const debounceRef = useRef(null);
+
+  // Sincronizar con query externo (ej: chips de género)
+  useEffect(() => {
+    if (externalQuery !== undefined && externalQuery !== query) {
+      setQuery(externalQuery);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalQuery]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

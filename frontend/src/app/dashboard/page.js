@@ -5,6 +5,7 @@ import {
   Tooltip, ResponsiveContainer, BarChart, Bar,
 } from 'recharts';
 import { progress as progressApi } from '../../lib/api';
+import { getProgress } from '../../lib/progressStore';
 import Navbar from '../../components/ui/Navbar';
 import { useAuth } from '../../context/AuthContext';
 
@@ -89,9 +90,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const local = getProgress();
     progressApi.getStats()
-      .then(setStats)
-      .catch(() => setStats(null))
+      .then((data) => setStats({ ...local, ...data }))
+      .catch(() => setStats(local))
       .finally(() => setLoading(false));
   }, []);
 

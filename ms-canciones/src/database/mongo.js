@@ -5,7 +5,7 @@ let isConnected = false;
 
 const connectMongo = async () => {
   if (isConnected) return;
-  await mongoose.connect(config.mongodb.uri, { serverSelectionTimeoutMS: 3000 });
+  await mongoose.connect(config.mongodb.uri, { serverSelectionTimeoutMS: 3000, bufferCommands: false });
   isConnected = true;
   console.log('Conectado a MongoDB');
 };

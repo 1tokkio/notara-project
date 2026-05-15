@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { songs as songsApi, progress as progressApi, ia } from '../../../lib/api';
+import { addXP, recordWordLearned, recordSongCompleted, addRecentSong, getProgress } from '../../../lib/progressStore';
 import Navbar from '../../../components/ui/Navbar';
 import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
 // Patrón Strategy: cada modo de letra es una estrategia intercambiable
@@ -115,6 +116,9 @@ export default function LessonPage() {
   const [translations, setTranslations] = useState({});
   const [keywords, setKeywords]     = useState([]);
 
+  // Completar lección
+  const [lessonDone, setLessonDone] = useState(false);
+
   // Chat embebido
   const [chatMessages, setChatMessages] = useState([
     { role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' },
@@ -122,6 +126,16 @@ export default function LessonPage() {
   const [chatInput, setChatInput]   = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef(null);
+
+  // Reset de chat, traducciones y estado al cambiar de canción
+  useEffect(() => {
+    setChatMessages([{ role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' }]);
+    setTranslations({});
+    setChatInput('');
+    setKeywords([]);
+    setActiveLineIdx(-1);
+    setLessonDone(false);
+  }, [songId]);
 
   // Carga inicial
   useEffect(() => {
@@ -140,6 +154,7 @@ export default function LessonPage() {
         const songData = songRes.status === 'fulfilled' ? songRes.value?.song : null;
         if (songData) {
           setSong(songData);
+          addRecentSong(songData);
           // Buscar canciones relacionadas del mismo artista
           songsApi.search(songData.artist, 4)
             .then((d) => setRelatedSongs((d.results || []).filter(s => s.spotifyId !== songId).slice(0, 3)))
@@ -169,7 +184,8 @@ export default function LessonPage() {
           }
         }
 
-        if (statsRes.status === 'fulfilled') setStats(statsRes.value);
+        const localProgress = getProgress();
+        setStats(statsRes.status === 'fulfilled' ? { ...localProgress, ...statsRes.value } : localProgress);
       } catch {
         setError('Error al cargar la canción');
       } finally {
@@ -224,6 +240,9 @@ export default function LessonPage() {
       const reply = data.explanation || data.translation || 'No se pudo obtener la explicación.';
       setTranslations(prev => ({ ...prev, [idx]: data.translation || reply }));
       setChatMessages(prev => [...prev, { role: 'ai', content: reply }]);
+      addXP(5);
+      recordWordLearned(1);
+      setStats(getProgress());
     } catch {
       setChatMessages(prev => [...prev, { role: 'ai', content: 'No se pudo obtener la explicación en este momento.' }]);
     } finally {
@@ -242,6 +261,7 @@ export default function LessonPage() {
     try {
       const data = await ia.chat(songId, message, chatMessages.filter(m => m.role !== 'ai' || m.content !== chatMessages[0].content));
       setChatMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
+      addXP(2);
     } catch {
       setChatMessages(prev => [...prev, { role: 'ai', content: 'Error al responder. Intenta de nuevo.' }]);
     } finally {
@@ -359,8 +379,8 @@ export default function LessonPage() {
                 onClick={() => setLyricsMode(strategy.id)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   lyricsMode === strategy.id
-                    ? 'bg-brand-hover text-white'
-                    : 'text-brand-text hover:text-white'
+                    ? 'bg-brand-green/15 text-brand-green font-semibold ring-1 ring-brand-green/30'
+                    : 'text-brand-text hover:text-white hover:bg-brand-hover'
                 }`}
               >
                 {strategy.label}
@@ -434,6 +454,34 @@ export default function LessonPage() {
 
         {/* ═══════════════ COLUMNA DERECHA ═══════════════ */}
         <aside className="w-72 flex-shrink-0 overflow-y-auto p-4 space-y-6">
+
+          {/* Completar lección */}
+          <div>
+            {lessonDone ? (
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-green/10 border border-brand-green/20">
+                <div className="w-8 h-8 rounded-full bg-brand-green/20 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4 text-brand-green">
+                    <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-brand-green text-sm font-semibold">Lección completada</p>
+                  <p className="text-brand-text text-xs">+50 XP ganados</p>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  const p = recordSongCompleted(song);
+                  setStats(s => ({ ...s, ...p }));
+                  setLessonDone(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-brand-green text-black font-semibold text-sm hover:bg-brand-green/90 transition-colors shadow-[0_0_16px_rgba(34,197,94,0.25)]"
+              >
+                Completar lección +50 XP
+              </button>
+            )}
+          </div>
 
           {/* Ejercicios */}
           <div>
