@@ -51,7 +51,7 @@ export const auth = {
   register: (name, email, password) =>
     request('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ nombre: name, email, password }),
     }),
 
   login: async (email, password) => {
@@ -59,10 +59,12 @@ export const auth = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    if (data?.accessToken) {
-      localStorage.setItem('access_token', data.accessToken);
-      localStorage.setItem('refresh_token', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+    // El backend puede devolver accessToken (nuevo) o token (legado)
+    const token = data?.accessToken || data?.token;
+    if (token) {
+      localStorage.setItem('access_token', token);
+      if (data?.refreshToken) localStorage.setItem('refresh_token', data.refreshToken);
+      if (data?.user) localStorage.setItem('user', JSON.stringify(data.user));
     }
     return data;
   },

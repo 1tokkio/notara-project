@@ -52,6 +52,20 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateRefreshToken(String email) {
+
+        Date now = new Date();
+        // El refresh token dura 7 veces más que el access token
+        Date expiry = new Date(now.getTime() + expiration * 7L);
+
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
     public String extractEmail(String token) {
 
         Claims claims = Jwts.parserBuilder()

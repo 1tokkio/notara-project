@@ -34,12 +34,17 @@ export function AuthProvider({ children }) {
       return { user: DEMO_USER };
     }
     const data = await auth.login(email, password);
-    setUser(data.user);
-    return data;
+    // Si el backend no devuelve user en el login, lo pedimos aparte
+    const userData = data?.user || await auth.me().catch(() => null);
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    }
+    return { ...data, user: userData };
   };
 
   const register = async (name, email, password) => {
-    const data = await auth.register(name, email, password);
+    await auth.register(name, email, password);
     return login(email, password);
   };
 

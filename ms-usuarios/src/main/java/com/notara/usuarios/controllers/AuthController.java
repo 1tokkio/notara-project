@@ -48,12 +48,17 @@ public class AuthController {
                 request.getPassword()
         );
 
-        String token = jwtService.generateToken(
+        String accessToken  = jwtService.generateToken(usuario.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(usuario.getEmail());
+
+        LoginResponse.UserInfo userInfo = new LoginResponse.UserInfo(
+                usuario.getId(),
+                usuario.getNombre(),
                 usuario.getEmail()
         );
 
         return ResponseEntity.ok(
-                new LoginResponse(token)
+                new LoginResponse(accessToken, refreshToken, userInfo)
         );
     }
 }
