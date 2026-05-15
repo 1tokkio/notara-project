@@ -5,6 +5,7 @@ import { songs as songsApi, progress as progressApi, ia } from '../../../lib/api
 import { addXP, recordWordLearned, recordSongCompleted, addRecentSong, getProgress, mergeFromBackend } from '../../../lib/progressStore';
 import Navbar from '../../../components/ui/Navbar';
 import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
+import SpotifySDKPlayer   from '../../../components/ui/SpotifySDKPlayer';
 import { LYRICS_STRATEGIES, getLyricsStrategy } from '../../../patterns/LyricsDisplayStrategy';
 
 const EXERCISE_CARDS = [
@@ -130,7 +131,6 @@ function ExercisePanel({ exercises, onClose, onXP }) {
 
   return (
     <div className="p-4 rounded-xl border border-white/10 bg-brand-card space-y-3">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-[10px] font-semibold text-brand-text uppercase tracking-widest">
           Ejercicio {idx + 1}/{exercises.length}
@@ -138,7 +138,6 @@ function ExercisePanel({ exercises, onClose, onXP }) {
         <button onClick={onClose} className="text-brand-text hover:text-white text-xs transition-colors">✕</button>
       </div>
 
-      {/* Tipo */}
       <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${
         exercise.type === 'multiple-choice' ? BADGE_COLORS.green :
         exercise.type === 'fill-blank'      ? BADGE_COLORS.purple :
@@ -148,10 +147,8 @@ function ExercisePanel({ exercises, onClose, onXP }) {
          exercise.type === 'fill-blank'      ? 'Completar' : 'Traducción'}
       </span>
 
-      {/* Pregunta */}
       <p className="text-white text-sm font-medium leading-snug">{exercise.question}</p>
 
-      {/* Opciones múltiples */}
       {exercise.type === 'multiple-choice' && (
         <div className="space-y-2">
           {(exercise.options || []).map((opt, i) => {
@@ -171,7 +168,6 @@ function ExercisePanel({ exercises, onClose, onXP }) {
         </div>
       )}
 
-      {/* Respuesta de texto */}
       {(exercise.type === 'fill-blank' || exercise.type === 'translation') && (
         <div className="space-y-2">
           <input
@@ -195,7 +191,6 @@ function ExercisePanel({ exercises, onClose, onXP }) {
         </div>
       )}
 
-      {/* Resultado */}
       {result && (
         <div className={`p-3 rounded-lg border text-sm ${result.correct
           ? 'bg-brand-green/10 border-brand-green/20 text-brand-green'
@@ -208,7 +203,6 @@ function ExercisePanel({ exercises, onClose, onXP }) {
         </div>
       )}
 
-      {/* Siguiente */}
       {result && (
         <button
           onClick={handleNext}
@@ -242,6 +236,29 @@ export default function LessonPage() {
   const { songId } = useParams();
   const router     = useRouter();
 
+  // ── Token de Spotify Premium ──────────────────────────────────────────────
+  const [spotifyToken, setSpotifyToken] = useState(null);
+
+  useEffect(() => {
+    // 1) Leer token desde URL params (vuelta del callback OAuth)
+    const urlParams    = new URLSearchParams(window.location.search);
+    const tokenFromUrl = urlParams.get('spotify_token');
+    const refresh      = urlParams.get('spotify_refresh');
+
+    if (tokenFromUrl) {
+      localStorage.setItem('spotify_token', tokenFromUrl);
+      if (refresh) localStorage.setItem('spotify_refresh', refresh);
+      window.history.replaceState({}, '', window.location.pathname);
+      setSpotifyToken(tokenFromUrl);
+      return;
+    }
+
+    // 2) Leer token desde localStorage (sesión previa)
+    const saved = localStorage.getItem('spotify_token');
+    if (saved) setSpotifyToken(saved);
+  }, []);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const [song, setSong]             = useState(null);
   const [lyricsData, setLyricsData] = useState(null);
   const [parsedLines, setParsedLines] = useState([]);
@@ -260,7 +277,6 @@ export default function LessonPage() {
   const [keywords, setKeywords]     = useState([]);
   const [lessonDone, setLessonDone] = useState(false);
 
-  // Última frase seleccionada — activa los ejercicios
   const [lastPhrase, setLastPhrase]     = useState('');
   const [exerciseSet, setExerciseSet]   = useState(null);
   const [exerciseLoading, setExerciseLoading] = useState(false);
@@ -327,7 +343,6 @@ export default function LessonPage() {
           }
         }
 
-        // Fusionar stats del backend con el progreso local
         if (statsRes.status === 'fulfilled' && statsRes.value) {
           mergeFromBackend(statsRes.value);
         }
@@ -488,8 +503,29 @@ export default function LessonPage() {
             {song.album && (
               <p className="text-brand-text text-xs truncate opacity-60 mt-0.5">{song.album}</p>
             )}
+
+            {/* Player — SDK completo si tiene Premium, embed si no */}
             <div className="mt-3">
-              <SpotifyEmbedPlayer spotifyId={songId} onTimeUpdate={handleTimeUpdate} />
+              {spotifyToken ? (
+                <SpotifySDKPlayer
+                  spotifyId={songId}
+                  token={spotifyToken}
+                  onTimeUpdate={handleTimeUpdate}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <SpotifyEmbedPlayer spotifyId={songId} onTimeUpdate={handleTimeUpdate} />
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/auth/spotify?songId=${songId}`}
+                    className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl bg-[#1DB954] hover:bg-[#1ed760] text-black font-semibold text-xs transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.516 17.302a.748.748 0 0 1-1.03.25c-2.819-1.723-6.365-2.113-10.542-1.157a.748.748 0 0 1-.332-1.459c4.571-1.044 8.492-.595 11.655 1.337a.748.748 0 0 1 .249 1.029zm1.473-3.275a.937.937 0 0 1-1.288.308c-3.226-1.983-8.144-2.558-11.96-1.4a.937.937 0 1 1-.543-1.794c4.358-1.323 9.776-.681 13.483 1.596a.937.937 0 0 1 .308 1.29zm.127-3.409C15.496 8.412 9.439 8.209 5.87 9.309a1.124 1.124 0 1 1-.653-2.151c4.118-1.25 10.963-1.008 15.295 1.6a1.124 1.124 0 0 1-1.396 1.76z" />
+                    </svg>
+                    Conectar Premium
+                  </a>
+                </div>
+              )}
             </div>
           </div>
 
@@ -609,7 +645,6 @@ export default function LessonPage() {
         {/* ═══════════════ COLUMNA DERECHA ═══════════════ */}
         <aside className="w-72 flex-shrink-0 overflow-y-auto p-4 space-y-6">
 
-          {/* Completar lección */}
           <div>
             {lessonDone ? (
               <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-green/10 border border-brand-green/20">
@@ -637,7 +672,6 @@ export default function LessonPage() {
             )}
           </div>
 
-          {/* Ejercicios */}
           <div>
             <SectionLabel>Ejercicios</SectionLabel>
 
@@ -674,7 +708,6 @@ export default function LessonPage() {
             )}
           </div>
 
-          {/* Tu progreso */}
           {stats && (
             <div>
               <SectionLabel>Tu progreso</SectionLabel>
@@ -713,7 +746,6 @@ export default function LessonPage() {
             </div>
           )}
 
-          {/* Canciones relacionadas */}
           {relatedSongs.length > 0 && (
             <div>
               <SectionLabel>Canciones relacionadas</SectionLabel>
