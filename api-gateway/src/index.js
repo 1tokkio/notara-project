@@ -144,7 +144,7 @@ app.get('/auth/spotify/callback', async (req, res) => {
       return res.redirect(`${dest}?spotify_error=${encodeURIComponent(data.error_description || data.error)}`);
     }
 
-    const dest = songId ? `${FRONTEND_URL}/lesson/${songId}` : FRONTEND_URL;
+    const dest = songId ? `${FRONTEND_URL}/lesson/${songId}` : `${FRONTEND_URL}/search`;
     const params = new URLSearchParams({
       spotify_token:   data.access_token,
       spotify_refresh: data.refresh_token,

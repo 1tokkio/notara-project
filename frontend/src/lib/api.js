@@ -25,19 +25,28 @@ async function request(path, options = {}) {
 
   // Si el token expiró, intentar renovarlo
   if (res.status === 401) {
-    const renewed = await refreshToken();
-    if (renewed) {
-      const newToken = localStorage.getItem('access_token');
-      const retryRes = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers: { ...headers, Authorization: `Bearer ${newToken}` },
-      });
-      return retryRes.json();
+    const hadToken = !!localStorage.getItem('access_token');
+
+    if (hadToken) {
+      const renewed = await refreshToken();
+      if (renewed) {
+        const newToken = localStorage.getItem('access_token');
+        const retryRes = await fetch(`${API_URL}${path}`, {
+          ...options,
+          headers: { ...headers, Authorization: `Bearer ${newToken}` },
+        });
+        return retryRes.json();
+      }
+      // Token expirado y no se pudo renovar → sesión terminada
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      return;
     }
-    // Si no se pudo renovar, redirigir al login
-    localStorage.clear();
-    window.location.href = '/login';
-    return;
+
+    // Sin token: la ruta requiere auth pero el usuario no estaba logueado
+    throw new Error('Se requiere autenticación');
   }
 
   const data = await res.json();

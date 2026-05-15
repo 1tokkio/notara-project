@@ -40,6 +40,16 @@ export default function SearchPage() {
 
   useEffect(() => {
     setRecentSongs(getRecentSongs());
+
+    // Capturar token de Spotify si viene del callback OAuth (sin songId)
+    const params = new URLSearchParams(window.location.search);
+    const spotifyToken   = params.get('spotify_token');
+    const spotifyRefresh = params.get('spotify_refresh');
+    if (spotifyToken) {
+      localStorage.setItem('spotify_token', spotifyToken);
+      if (spotifyRefresh) localStorage.setItem('spotify_refresh', spotifyRefresh);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const handleSearch = useCallback(async (query) => {
