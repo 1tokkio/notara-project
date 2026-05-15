@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 const styles = {
-  wrapper:     'relative w-full max-w-2xl',
+  wrapper:     'relative w-full max-w-4xl',
   searchIcon:  'absolute left-4 top-1/2 -translate-y-1/2 text-brand-text text-sm pointer-events-none',
   input:       'w-full bg-white/10 border border-white/10 rounded-full px-12 py-4 text-white placeholder-brand-text focus:outline-none focus:border-brand-green focus:bg-white/15 transition-all',
   rightSlot:   'absolute right-4 top-1/2 -translate-y-1/2',

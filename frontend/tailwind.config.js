@@ -16,6 +16,8 @@ module.exports = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        geist: ['Geist', 'system-ui', 'sans-serif'],
+        'geist-mono': ['Geist Mono', 'monospace'],
       },
       keyframes: {
         fadeIn:  { from: { opacity: 0, transform: 'translateY(4px)' },  to: { opacity: 1, transform: 'translateY(0)' } },

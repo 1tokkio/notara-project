@@ -73,8 +73,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_SECRET="hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif"
+      - JWT_REFRESH_SECRET="fny4fgy34f6u8gy549t9yr87ufh09w3rfy390ftdf4tfue49"
       - SERVER_PORT=8081
       - EUREKA_URL=http://eureka-server:8761/eureka
     depends_on:
