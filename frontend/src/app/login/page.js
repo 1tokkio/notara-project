@@ -36,13 +36,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      const hasSpotify = !!localStorage.getItem('spotify_token');
-      if (hasSpotify) {
-        router.push('/search');
-      } else {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-        window.location.href = `${apiUrl}/auth/spotify`;
-      }
+      router.push('/search');
     } catch (err) {
       setError(err.message || 'Credenciales incorrectas');
     } finally {
