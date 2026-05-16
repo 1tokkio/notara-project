@@ -1,0 +1,27 @@
+PROYECTO NOTARA - Repositorios del equipo
+==========================================
+
+Repositorio principal:
+  https://github.com/1tokkio/notara-project
+
+Integrantes y ramas:
+  - 1tokkio  → rama: 1tokkio   (frontend + integración)
+  - eliecer1 → rama: eliecer1  (ms-usuarios + autenticación)
+  - panxo    → rama: panxo     (UX y diseño)
+
+Componentes del proyecto:
+  frontend/         Next.js 14 — interfaz web (puerto 3001)
+  api-gateway/      Express.js — enrutamiento centralizado (puerto 3000)
+  bff/              Spring Boot — Backend for Frontend (puerto 8084)
+  ms-usuarios/      Spring Boot — autenticación y usuarios (puerto 8081)
+  ms-canciones/     Fastify     — búsqueda de canciones y letras (puerto 3002)
+  ms-notas-metas/   Spring Boot — notas y metas del usuario (puerto 8083)
+  eureka-server/    Spring Boot — descubrimiento de servicios (puerto 8761)
+
+Tecnologías principales:
+  - Node.js / Express / Fastify
+  - Java 17 / Spring Boot 3
+  - Next.js 14 / React 18 / TailwindCSS
+  - MongoDB / PostgreSQL / Redis
+  - Netflix Eureka / OpenFeign
+  - API Spotify / LRCLib / Claude (Anthropic)
