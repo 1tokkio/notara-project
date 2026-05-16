@@ -13,9 +13,6 @@ const getAccessToken = async () => {
   const clientId = config.spotify.clientId;
   const clientSecret = config.spotify.clientSecret;
 
-  console.log('CLIENT_ID:', clientId);
-  console.log('CLIENT_SECRET:', clientSecret ? 'exists' : 'MISSING');
-
   if (!clientId || !clientSecret) {
     throw new Error('Spotify credentials no configuradas en .env');
   }
@@ -33,7 +30,6 @@ const getAccessToken = async () => {
         },
       }
     );
-    console.log('Token obtenido OK');
     accessToken = response.data.access_token;
     tokenExpiresAt = Date.now() + response.data.expires_in * 1000 - 60000;
     return accessToken;
