@@ -69,140 +69,119 @@ function ExerciseCard({ badge, color, title, desc, onClick, disabled }) {
   );
 }
 
-function ExercisePanel({ exercises, onClose, onXP }) {
-  const [idx, setIdx]       = useState(0);
-  const [answer, setAnswer] = useState('');
-  const [result, setResult] = useState(null);
-  const [score, setScore]   = useState(0);
-  const [done, setDone]     = useState(false);
+function QuizChat({ exercises, onXP }) {
+  const bottomRef = useRef(null);
+  const [messages, setMessages] = useState([{ role: 'ai', content: exercises[0].question }]);
+  const [input, setInput]       = useState('');
+  const [current, setCurrent]   = useState(0);
+  const [score, setScore]       = useState(0);
+  const [done, setDone]         = useState(false);
 
-  const exercise = exercises[idx];
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  const handleOptionClick = (option) => {
-    if (result) return;
-    const correct = option === exercise.answer;
-    setResult({ correct, explanation: exercise.explanation });
-    if (correct) { setScore(s => s + 1); onXP(10); }
-  };
+  const exercise = exercises[current];
 
-  const handleTextSubmit = () => {
-    if (!answer.trim() || result) return;
-    const correct = answer.toLowerCase().trim() === (exercise.answer || '').toLowerCase().trim();
-    setResult({ correct, explanation: exercise.explanation });
-    if (correct) { setScore(s => s + 1); onXP(10); }
-  };
+  const submit = (answer) => {
+    if (!answer.trim() || done) return;
+    const correct  = answer.toLowerCase().trim() === (exercise.answer || '').toLowerCase().trim();
+    const newScore = score + (correct ? 1 : 0);
+    if (correct) onXP(10);
+    setScore(newScore);
+    setInput('');
 
-  const handleNext = () => {
-    if (idx + 1 >= exercises.length) {
+    const next   = current + 1;
+    const isLast = next >= exercises.length;
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: answer },
+      {
+        role:    'ai',
+        content: correct
+          ? `Correcto!${exercise.explanation ? ` ${exercise.explanation}` : ''}`
+          : `No es correcto. La respuesta es "${exercise.answer}".${exercise.explanation ? ` ${exercise.explanation}` : ''}`,
+        correct,
+      },
+      ...(isLast
+        ? [{ role: 'ai', content: `Terminaste el quiz! ${newScore}/${exercises.length} correctas · +${newScore * 10} XP`, isDone: true }]
+        : [{ role: 'ai', content: exercises[next].question }]
+      ),
+    ]);
+
+    if (isLast) {
       setDone(true);
     } else {
-      setIdx(i => i + 1);
-      setAnswer('');
-      setResult(null);
+      setCurrent(next);
     }
   };
 
-  if (done) {
-    return (
-      <div className="p-4 rounded-xl border border-white/10 bg-brand-card text-center space-y-3">
-        <div className="w-10 h-10 rounded-full bg-brand-green/20 flex items-center justify-center mx-auto">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5 text-brand-green">
-            <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <p className="text-white font-semibold text-sm">Ejercicios completados</p>
-        <p className="text-brand-text text-xs">{score}/{exercises.length} correctas · +{score * 10} XP</p>
-        <button
-          onClick={onClose}
-          className="w-full py-2 rounded-lg bg-brand-hover border border-white/10 text-white text-sm hover:bg-brand-card transition-colors"
-        >
-          Volver a ejercicios
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-4 rounded-xl border border-white/10 bg-brand-card space-y-3">
-      <div className="flex items-center justify-between">
+    <div className="bg-brand-card rounded-xl border border-white/10 overflow-hidden flex flex-col">
+      <div className="px-3 py-2 border-b border-white/5 flex items-center justify-between">
         <p className="text-[10px] font-semibold text-brand-text uppercase tracking-widest">
-          Ejercicio {idx + 1}/{exercises.length}
+          {done ? 'Quiz completado' : `Pregunta ${current + 1} de ${exercises.length}`}
         </p>
-        <button onClick={onClose} className="text-brand-text hover:text-white text-xs transition-colors">✕</button>
+        {done && <span className="text-brand-green text-[10px] font-semibold">{score}/{exercises.length}</span>}
       </div>
 
-      <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-        exercise.type === 'multiple-choice' ? BADGE_COLORS.green :
-        exercise.type === 'fill-blank'      ? BADGE_COLORS.purple :
-        BADGE_COLORS.orange
-      }`}>
-        {exercise.type === 'multiple-choice' ? 'Opción múltiple' :
-         exercise.type === 'fill-blank'      ? 'Completar' : 'Traducción'}
-      </span>
+      <div className="h-52 overflow-y-auto p-3 space-y-2">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {msg.role === 'ai' ? (
+              <p className={`text-xs max-w-[90%] leading-relaxed ${
+                msg.isDone          ? 'text-brand-green font-semibold' :
+                msg.correct === true  ? 'text-brand-green' :
+                msg.correct === false ? 'text-red-400' :
+                'text-brand-text'
+              }`}>
+                {msg.content}
+              </p>
+            ) : (
+              <span className="bg-brand-purple/80 text-white text-xs px-2.5 py-1 rounded-lg max-w-[85%] leading-relaxed">
+                {msg.content}
+              </span>
+            )}
+          </div>
+        ))}
+        <div ref={bottomRef} />
+      </div>
 
-      <p className="text-white text-sm font-medium leading-snug">{exercise.question}</p>
-
-      {exercise.type === 'multiple-choice' && (
-        <div className="space-y-2">
-          {(exercise.options || []).map((opt, i) => {
-            let cls = 'w-full text-left px-3 py-2 rounded-lg border text-sm transition-colors ';
-            if (!result)
-              cls += 'border-white/10 text-brand-text hover:border-brand-green/50 hover:text-white cursor-pointer';
-            else if (opt === exercise.answer)
-              cls += 'border-brand-green bg-brand-green/10 text-brand-green';
-            else
-              cls += 'border-white/5 text-brand-text opacity-40 cursor-default';
-            return (
-              <button key={i} className={cls} onClick={() => handleOptionClick(opt)}>
-                {opt}
+      {!done && (
+        <div className="p-3 border-t border-white/5">
+          {exercise.type === 'multiple-choice' ? (
+            <div className="space-y-1.5">
+              {(exercise.options || []).map((opt, i) => (
+                <button
+                  key={i}
+                  onClick={() => submit(opt)}
+                  className="w-full text-left px-2.5 py-1.5 rounded-lg border border-white/10 text-brand-text hover:border-brand-green/40 hover:text-white text-xs transition-colors"
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submit(input)}
+                placeholder="Tu respuesta..."
+                className="flex-1 bg-brand-hover border border-white/5 rounded-lg px-2 py-1.5 text-white text-xs placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
+              />
+              <button
+                onClick={() => submit(input)}
+                disabled={!input.trim()}
+                className="px-2 py-1.5 rounded-lg bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors text-white text-xs"
+              >
+                →
               </button>
-            );
-          })}
-        </div>
-      )}
-
-      {(exercise.type === 'fill-blank' || exercise.type === 'translation') && (
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={answer}
-            onChange={e => setAnswer(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleTextSubmit()}
-            disabled={!!result}
-            placeholder="Tu respuesta..."
-            className="w-full bg-brand-hover border border-white/5 rounded-lg px-3 py-2 text-white text-sm placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors disabled:opacity-60"
-          />
-          {!result && (
-            <button
-              onClick={handleTextSubmit}
-              disabled={!answer.trim()}
-              className="w-full py-2 rounded-lg bg-brand-purple text-white text-sm hover:bg-violet-500 transition-colors disabled:opacity-40"
-            >
-              Verificar
-            </button>
+            </div>
           )}
         </div>
-      )}
-
-      {result && (
-        <div className={`p-3 rounded-lg border text-sm ${result.correct
-          ? 'bg-brand-green/10 border-brand-green/20 text-brand-green'
-          : 'bg-red-500/10 border-red-500/20 text-red-400'}`}
-        >
-          <p className="font-semibold">{result.correct ? '¡Correcto! +10 XP' : 'Incorrecto'}</p>
-          {result.explanation && (
-            <p className="text-brand-text text-xs mt-1 font-normal">{result.explanation}</p>
-          )}
-        </div>
-      )}
-
-      {result && (
-        <button
-          onClick={handleNext}
-          className="w-full py-2 rounded-lg bg-brand-hover border border-white/10 text-white text-sm hover:bg-brand-card transition-colors"
-        >
-          {idx + 1 >= exercises.length ? 'Ver resultado' : 'Siguiente →'}
-        </button>
       )}
     </div>
   );
@@ -270,9 +249,8 @@ export default function LessonPage() {
   const [keywords, setKeywords]     = useState([]);
   const [lessonDone, setLessonDone] = useState(false);
 
-  const [exerciseSet, setExerciseSet]         = useState(null);
+  const [exerciseSet, setExerciseSet]           = useState(null);
   const [exercisesLoading, setExercisesLoading] = useState(false);
-  const [showExercises, setShowExercises]     = useState(false);
 
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput]   = useState('');
@@ -285,7 +263,6 @@ export default function LessonPage() {
     setLessonDone(false);
     setExerciseSet(null);
     setExercisesLoading(false);
-    setShowExercises(false);
   }, [songId]);
 
   useEffect(() => {
@@ -544,23 +521,6 @@ export default function LessonPage() {
             )}
           </div>
 
-          {/* Ejercicios desplegables */}
-          {showExercises && (
-            <div className="flex-shrink-0 border-t border-white/5 max-h-64 overflow-y-auto p-4">
-              {exerciseSet ? (
-                <ExercisePanel
-                  exercises={exerciseSet}
-                  onClose={() => setShowExercises(false)}
-                  onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
-                />
-              ) : (
-                <div className="text-center py-4">
-                  <div className="w-6 h-6 rounded-full border-2 border-brand-green border-t-transparent animate-spin mx-auto mb-2" />
-                  <p className="text-brand-text text-xs">Generando quiz...</p>
-                </div>
-              )}
-            </div>
-          )}
 
         </main>
 
@@ -596,26 +556,17 @@ export default function LessonPage() {
 
           <div>
             <SectionLabel>Quiz de la canción</SectionLabel>
-            <button
-              onClick={() => setShowExercises(v => !v)}
-              disabled={exercisesLoading || !exerciseSet}
-              className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors ${
-                showExercises
-                  ? 'bg-brand-purple text-white hover:bg-violet-500'
-                  : 'bg-brand-hover text-white hover:bg-white/10 border border-white/10'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {exercisesLoading
-                ? 'Preparando quiz...'
-                : showExercises
-                  ? '✕ Cerrar quiz'
-                  : '▼ Ver quiz'}
-            </button>
-            {exercisesLoading && (
-              <p className="text-brand-text text-[10px] text-center pt-2 opacity-70">
-                Generando preguntas sobre la canción...
-              </p>
-            )}
+            {exercisesLoading ? (
+              <div className="flex items-center gap-2 py-3">
+                <div className="w-4 h-4 rounded-full border-2 border-brand-green border-t-transparent animate-spin flex-shrink-0" />
+                <p className="text-brand-text text-xs">Generando preguntas...</p>
+              </div>
+            ) : exerciseSet ? (
+              <QuizChat
+                exercises={exerciseSet}
+                onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
+              />
+            ) : null}
           </div>
 
           <div>
