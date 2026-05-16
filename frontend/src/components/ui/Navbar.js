@@ -8,9 +8,10 @@ import { getProgress } from '../../lib/progressStore';
 const styles = {
   nav:          'sticky top-0 z-50 bg-brand-dark/90 backdrop-blur-md border-b border-white/5',
   inner:        'max-w-none px-6 h-16 flex items-center gap-5',
-  logo:         'flex items-center gap-2 font-semibold text-sm mr-3 shrink-0',
-  dot:          'w-2 h-2 rounded-full bg-brand-green',
-  logoText:     'text-white',
+  logo:         'flex items-center gap-2.5 mr-4 shrink-0',
+  logoBadge:    'w-7 h-7 rounded-lg bg-brand-green flex items-center justify-center flex-shrink-0',
+  logoLetter:   'text-black font-black text-sm leading-none',
+  logoText:     'text-white font-bold text-base tracking-tight',
   navLinks:     'flex items-center gap-1',
   linkActive:   'px-3 py-1.5 text-sm font-medium text-white bg-brand-card rounded-lg',
   linkInactive: 'px-3 py-1.5 text-sm font-medium text-brand-text hover:text-white hover:bg-brand-card/50 rounded-lg transition-colors',
@@ -39,7 +40,7 @@ function getInitials(name = '') {
 }
 
 export default function Navbar({ lessonBadge }) {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router   = useRouter();
   const pathname = usePathname();
   const [xp, setXp]           = useState(0);
@@ -85,7 +86,9 @@ export default function Navbar({ lessonBadge }) {
       <div className={styles.inner}>
 
         <Link href="/search" className={styles.logo}>
-          <span className={styles.dot} />
+          <div className={styles.logoBadge}>
+            <span className={styles.logoLetter}>N</span>
+          </div>
           <span className={styles.logoText}>Notara</span>
         </Link>
 
@@ -110,7 +113,7 @@ export default function Navbar({ lessonBadge }) {
           {lessonBadge && (
             <span className={styles.badge}>{lessonBadge}</span>
           )}
-          {user && (
+          {!loading && user && (
             <>
               <div className={styles.xpPill}>
                 <span className={styles.xpDot} />

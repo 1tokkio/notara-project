@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 /**
  * Función base de fetch con manejo de errores y token automático.
  */
-async function request(path, options = {}) {
+async function request(path, { silent = false, ...options } = {}) {
   const token = typeof window !== 'undefined'
     ? localStorage.getItem('access_token')
     : null;
@@ -23,10 +23,12 @@ async function request(path, options = {}) {
 
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
 
-  // Si el token expiró, intentar renovarlo
   if (res.status === 401) {
-    const hadToken = !!localStorage.getItem('access_token');
+    // En modo silencioso nunca redirigir: solo lanzar el error para que
+    // quien llama decida qué hacer (evita loops de login en rutas opcionales)
+    if (silent) throw new Error('No autorizado');
 
+    const hadToken = !!localStorage.getItem('access_token');
     if (hadToken) {
       const renewed = await refreshToken();
       if (renewed) {
@@ -37,7 +39,6 @@ async function request(path, options = {}) {
         });
         return retryRes.json();
       }
-      // Token expirado y no se pudo renovar → sesión terminada
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
@@ -45,7 +46,6 @@ async function request(path, options = {}) {
       return;
     }
 
-    // Sin token: la ruta requiere auth pero el usuario no estaba logueado
     throw new Error('Se requiere autenticación');
   }
 
@@ -147,7 +147,7 @@ export const ia = {
 
 export const progress = {
   getStats: () =>
-    request('/progress/stats'),
+    request('/progress/stats', { silent: true }),
 
   saveWord: (word, songId, context) =>
     request('/progress/word', {
