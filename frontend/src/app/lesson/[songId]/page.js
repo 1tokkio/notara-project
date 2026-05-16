@@ -8,13 +8,6 @@ import SpotifyEmbedPlayer from '../../../components/ui/SpotifyEmbedPlayer';
 import SpotifySDKPlayer   from '../../../components/ui/SpotifySDKPlayer';
 import { LYRICS_STRATEGIES, getLyricsStrategy } from '../../../patterns/LyricsDisplayStrategy';
 
-const EXERCISE_CARDS = [
-  { badge: 'Vocabulario', color: 'green',  title: 'Completa los espacios',  desc: 'Rellena las palabras que faltan en la letra.' },
-  { badge: 'Escucha',     color: 'orange', title: 'Dictado de letra',        desc: 'Escucha y escribe lo que oyes.' },
-  { badge: 'Gramática',   color: 'purple', title: 'Tiempo verbal',           desc: 'Identifica verbos en presente perfecto.' },
-  { badge: 'Vocabulario', color: 'green',  title: 'Tarjetas de memoria',     desc: 'Practica con flashcards interactivas.' },
-];
-
 const BADGE_COLORS = {
   green:  'bg-brand-green/20 text-brand-green',
   orange: 'bg-brand-orange/20 text-brand-orange',
@@ -280,23 +273,20 @@ export default function LessonPage() {
   const [lastPhrase, setLastPhrase]     = useState('');
   const [exerciseSet, setExerciseSet]   = useState(null);
   const [exerciseLoading, setExerciseLoading] = useState(false);
+  const [showExercises, setShowExercises] = useState(false);
 
-  const [chatMessages, setChatMessages] = useState([
-    { role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' },
-  ]);
+  const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput]   = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const chatEndRef = useRef(null);
 
   useEffect(() => {
-    setChatMessages([{ role: 'ai', content: 'Hola! Pregúntame sobre cualquier palabra de la canción' }]);
     setTranslations({});
-    setChatInput('');
     setKeywords([]);
     setActiveLineIdx(-1);
     setLessonDone(false);
     setLastPhrase('');
     setExerciseSet(null);
+    setShowExercises(false);
   }, [songId]);
 
   useEffect(() => {
@@ -375,58 +365,11 @@ export default function LessonPage() {
     }
   }, [currentTime, parsedLines, activeLineIdx]);
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
   const handleTimeUpdate = useCallback((seconds) => setCurrentTime(seconds), []);
 
   const handleLineClick = async (line, idx) => {
     if (!line.trim()) return;
     setLastPhrase(line);
-
-    if (translations[idx]) {
-      setChatMessages(prev => [...prev, { role: 'user', content: `¿Qué significa "${line}"?` }]);
-      setChatMessages(prev => [...prev, { role: 'ai', content: translations[idx] }]);
-      return;
-    }
-
-    setChatMessages(prev => [...prev, { role: 'user', content: `¿Qué significa "${line}"?` }]);
-    setChatLoading(true);
-
-    try {
-      const data = await ia.explain(songId, line);
-      const reply = data.explanation || data.translation || 'No se pudo obtener la explicación.';
-      setTranslations(prev => ({ ...prev, [idx]: data.translation || reply }));
-      setChatMessages(prev => [...prev, { role: 'ai', content: reply }]);
-      addXP(5);
-      recordWordLearned(1);
-      setStats(getProgress());
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'ai', content: 'No se pudo obtener la explicación en este momento.' }]);
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const handleExerciseStart = async () => {
-    if (!lastPhrase) {
-      setChatMessages(prev => [...prev,
-        { role: 'ai', content: 'Primero tocá una línea de la letra para seleccionarla y luego elegí el ejercicio.' },
-      ]);
-      return;
-    }
-    setExerciseLoading(true);
-    try {
-      const data = await ia.getExercises(songId, lastPhrase);
-      setExerciseSet(data.exercises || []);
-    } catch {
-      setChatMessages(prev => [...prev,
-        { role: 'ai', content: 'No se pudieron generar ejercicios. Intentá de nuevo.' },
-      ]);
-    } finally {
-      setExerciseLoading(false);
-    }
   };
 
   const handleChatSend = async () => {
@@ -437,7 +380,7 @@ export default function LessonPage() {
     setChatLoading(true);
 
     try {
-      const data = await ia.chat(songId, message, chatMessages.filter(m => m.role !== 'ai' || m.content !== chatMessages[0].content));
+      const data = await ia.chat(songId, message, chatMessages);
       setChatMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
       addXP(2);
     } catch {
@@ -597,48 +540,23 @@ export default function LessonPage() {
             )}
           </div>
 
-          {/* Chat embebido */}
-          <div className="flex-shrink-0 border-t border-white/5 flex flex-col max-h-56">
-            <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  {msg.role === 'ai' ? (
-                    <p className="text-brand-text text-sm max-w-[85%]">{msg.content}</p>
-                  ) : (
-                    <span className="bg-brand-purple text-white text-sm px-3 py-1.5 rounded-xl max-w-[85%]">
-                      {msg.content}
-                    </span>
-                  )}
-                </div>
-              ))}
-              {chatLoading && (
-                <div className="flex gap-1 px-1">
-                  {[0, 1, 2].map(i => (
-                    <div key={i} className="w-1.5 h-1.5 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                  ))}
+          {/* Ejercicios desplegables */}
+          {showExercises && (
+            <div className="flex-shrink-0 border-t border-white/5 max-h-64 overflow-y-auto p-4">
+              {exerciseSet ? (
+                <ExercisePanel
+                  exercises={exerciseSet}
+                  onClose={() => { setExerciseSet(null); setShowExercises(false); }}
+                  onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
+                />
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-6 h-6 rounded-full border-2 border-brand-green border-t-transparent animate-spin mx-auto mb-2" />
+                  <p className="text-brand-text text-xs">Generando ejercicios...</p>
                 </div>
               )}
-              <div ref={chatEndRef} />
             </div>
-
-            <div className="flex gap-2 px-4 pb-3">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                placeholder="Pregúntale a la IA sobre la letra..."
-                className="flex-1 bg-brand-hover border border-white/5 rounded-xl px-4 py-2 text-white text-sm placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
-              />
-              <button
-                onClick={handleChatSend}
-                disabled={!chatInput.trim() || chatLoading}
-                className="w-9 h-9 rounded-xl bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-sm"
-              >
-                &#10148;
-              </button>
-            </div>
-          </div>
+          )}
 
         </main>
 
@@ -674,38 +592,82 @@ export default function LessonPage() {
 
           <div>
             <SectionLabel>Ejercicios</SectionLabel>
+            <button
+              onClick={() => {
+                if (!lastPhrase) {
+                  setShowExercises(false);
+                  return;
+                }
+                if (!showExercises) {
+                  setShowExercises(true);
+                  if (!exerciseSet) {
+                    setExerciseLoading(true);
+                    ia.getExercises(songId, lastPhrase)
+                      .then(data => setExerciseSet(data.exercises || []))
+                      .catch(() => {})
+                      .finally(() => setExerciseLoading(false));
+                  }
+                } else {
+                  setShowExercises(false);
+                }
+              }}
+              disabled={exerciseLoading || !lastPhrase}
+              className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors ${
+                showExercises
+                  ? 'bg-brand-purple text-white hover:bg-violet-500'
+                  : 'bg-brand-hover text-white hover:bg-white/10 border border-white/10'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {showExercises ? '✕ Cerrar ejercicios' : '▼ Activar ejercicios'}
+            </button>
+            {!lastPhrase && (
+              <p className="text-brand-text text-[10px] text-center pt-2 opacity-70">
+                Tocá una línea de la letra
+              </p>
+            )}
+          </div>
 
-            {exerciseSet ? (
-              <ExercisePanel
-                exercises={exerciseSet}
-                onClose={() => setExerciseSet(null)}
-                onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
-              />
-            ) : (
-              <div className="space-y-2">
-                {EXERCISE_CARDS.map((ex, i) => (
-                  <ExerciseCard
-                    key={i}
-                    {...ex}
-                    disabled={exerciseLoading}
-                    onClick={handleExerciseStart}
-                  />
+          <div>
+            <SectionLabel>Chat - Preguntas</SectionLabel>
+            <div className="bg-brand-card rounded-xl border border-white/10 p-3 space-y-2 max-h-64 flex flex-col">
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {chatMessages.slice(0, 8).map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'ai' ? (
+                      <p className="text-brand-text text-xs max-w-[85%] leading-relaxed">{msg.content}</p>
+                    ) : (
+                      <span className="bg-brand-purple text-white text-xs px-2 py-1 rounded-lg max-w-[85%]">
+                        {msg.content}
+                      </span>
+                    )}
+                  </div>
                 ))}
-                {exerciseLoading && (
-                  <p className="text-brand-text text-xs text-center py-1 animate-pulse">Generando ejercicios...</p>
-                )}
-                {!lastPhrase && !exerciseLoading && (
-                  <p className="text-brand-text text-[10px] text-center pt-1 opacity-70">
-                    Tocá una línea de la letra para activar los ejercicios
-                  </p>
-                )}
-                {lastPhrase && !exerciseLoading && (
-                  <p className="text-brand-green text-[10px] text-center pt-1">
-                    Frase seleccionada · elegí un ejercicio
-                  </p>
+                {chatLoading && (
+                  <div className="flex gap-1 px-1">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className="w-1 h-1 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                    ))}
+                  </div>
                 )}
               </div>
-            )}
+              <div className="flex gap-1.5 pt-2 border-t border-white/5">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                  placeholder="Pregunta algo..."
+                  className="flex-1 bg-brand-hover border border-white/5 rounded-lg px-2 py-1.5 text-white text-xs placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
+                />
+                <button
+                  onClick={handleChatSend}
+                  disabled={!chatInput.trim() || chatLoading}
+                  className="px-2 py-1.5 rounded-lg bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-xs"
+                >
+                  →
+                </button>
+              </div>
+            </div>
           </div>
 
           {stats && (
