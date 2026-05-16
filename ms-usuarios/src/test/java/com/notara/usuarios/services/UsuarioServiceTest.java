@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 
 public class UsuarioServiceTest {
 
@@ -95,5 +96,96 @@ public class UsuarioServiceTest {
                 usuarioService.obtenerPorId(1L);
 
         assertTrue(resultado.isPresent());
+    }
+
+    @Test
+    void login_ok() {
+
+        Usuario usuario = new Usuario(
+                1L,
+                "Juan",
+                "juan@test.com",
+                "hash_password"
+        );
+
+        when(usuarioRepository.findByEmail("juan@test.com"))
+                .thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches("1234", "hash_password"))
+                .thenReturn(true);
+
+        Usuario resultado = usuarioService.login("juan@test.com", "1234");
+
+        assertNotNull(resultado);
+        assertEquals("juan@test.com", resultado.getEmail());
+    }
+
+    @Test
+    void login_usuarioNoExiste() {
+
+        when(usuarioRepository.findByEmail("noexiste@test.com"))
+                .thenReturn(Optional.empty());
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> usuarioService.login("noexiste@test.com", "1234")
+        );
+
+        assertEquals("Usuario no encontrado", ex.getMessage());
+    }
+
+    @Test
+    void login_passwordIncorrecta() {
+
+        Usuario usuario = new Usuario(
+                1L,
+                "Juan",
+                "juan@test.com",
+                "hash_password"
+        );
+
+        when(usuarioRepository.findByEmail("juan@test.com"))
+                .thenReturn(Optional.of(usuario));
+
+        when(passwordEncoder.matches("wrong", "hash_password"))
+                .thenReturn(false);
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> usuarioService.login("juan@test.com", "wrong")
+        );
+
+        assertEquals("Contraseña incorrecta", ex.getMessage());
+    }
+
+    @Test
+    void registrarUsuario_encriptaPassword() {
+
+        Usuario usuario = new Usuario(
+                null,
+                "Maria",
+                "maria@test.com",
+                "password123"
+        );
+
+        when(passwordEncoder.encode("password123"))
+                .thenReturn("hash_encriptado");
+
+        when(usuarioRepository.save(any(Usuario.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Usuario resultado = usuarioService.registrarUsuario(usuario);
+
+        assertEquals("hash_encriptado", resultado.getPassword());
+    }
+
+    @Test
+    void eliminarUsuario_llamaRepositorio() {
+
+        doNothing().when(usuarioRepository).deleteById(1L);
+
+        usuarioService.eliminarUsuario(1L);
+
+        verify(usuarioRepository, times(1)).deleteById(1L);
     }
 }
