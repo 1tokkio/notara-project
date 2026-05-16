@@ -26,7 +26,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
     ports:
-      - "5433:5433"
+      - "5433:5432"
     volumes:
       - postgres_notas_metas_data:/var/lib/postgresql/data
     healthcheck:
@@ -133,6 +133,9 @@ services:
       - MS_USUARIOS_URL=http://ms-usuarios:8081
       - MS_CANCIONES_URL=http://ms-canciones:3002
       - API_GATEWAY_PORT=3000
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/auth/spotify/callback
     depends_on:
       - ms-usuarios
       - ms-canciones
