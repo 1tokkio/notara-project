@@ -249,6 +249,7 @@ export default function LessonPage() {
   const [keywords, setKeywords]     = useState([]);
   const [lessonDone, setLessonDone] = useState(false);
 
+  const [sideMode, setSideMode]                 = useState('quiz');
   const [exerciseSet, setExerciseSet]           = useState(null);
   const [exercisesLoading, setExercisesLoading] = useState(false);
 
@@ -261,6 +262,7 @@ export default function LessonPage() {
     setKeywords([]);
     setActiveLineIdx(-1);
     setLessonDone(false);
+    setSideMode('quiz');
     setExerciseSet(null);
     setExercisesLoading(false);
   }, [songId]);
@@ -525,9 +527,10 @@ export default function LessonPage() {
         </main>
 
         {/* ═══════════════ COLUMNA DERECHA ═══════════════ */}
-        <aside className="w-72 flex-shrink-0 overflow-y-auto p-4 space-y-6">
+        <aside className="w-72 flex-shrink-0 flex flex-col min-h-0">
 
-          <div>
+          {/* Completar lección — siempre visible */}
+          <div className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-white/5">
             {lessonDone ? (
               <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-green/10 border border-brand-green/20">
                 <div className="w-8 h-8 rounded-full bg-brand-green/20 flex items-center justify-center flex-shrink-0">
@@ -554,126 +557,139 @@ export default function LessonPage() {
             )}
           </div>
 
-          <div>
-            <SectionLabel>Quiz de la canción</SectionLabel>
-            {exercisesLoading ? (
-              <div className="flex items-center gap-2 py-3">
-                <div className="w-4 h-4 rounded-full border-2 border-brand-green border-t-transparent animate-spin flex-shrink-0" />
-                <p className="text-brand-text text-xs">Generando preguntas...</p>
-              </div>
-            ) : exerciseSet ? (
-              <QuizChat
-                exercises={exerciseSet}
-                onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
-              />
-            ) : null}
+          {/* Tabs de modo — siempre visibles */}
+          <div className="flex-shrink-0 flex border-b border-white/5">
+            <button
+              onClick={() => setSideMode('quiz')}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+                sideMode === 'quiz'
+                  ? 'border-brand-green text-brand-green'
+                  : 'border-transparent text-brand-text hover:text-white'
+              }`}
+            >
+              Quiz
+            </button>
+            <button
+              onClick={() => setSideMode('chat')}
+              className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 ${
+                sideMode === 'chat'
+                  ? 'border-brand-purple text-brand-purple'
+                  : 'border-transparent text-brand-text hover:text-white'
+              }`}
+            >
+              Chat
+            </button>
           </div>
 
-          <div>
-            <SectionLabel>Chat libre</SectionLabel>
-            <div className="bg-brand-card rounded-xl border border-white/10 p-3 space-y-2 max-h-64 flex flex-col">
-              <div className="flex-1 overflow-y-auto space-y-2">
-                {chatMessages.slice(0, 8).map((msg, i) => (
-                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    {msg.role === 'ai' ? (
-                      <p className="text-brand-text text-xs max-w-[85%] leading-relaxed">{msg.content}</p>
-                    ) : (
-                      <span className="bg-brand-purple text-white text-xs px-2 py-1 rounded-lg max-w-[85%]">
-                        {msg.content}
-                      </span>
-                    )}
+          {/* Contenido scrollable según el modo */}
+          <div className="flex-1 overflow-y-auto min-h-0">
+
+            {sideMode === 'quiz' && (
+              <div className="p-4 space-y-5">
+                {exercisesLoading ? (
+                  <div className="flex items-center gap-2 py-3">
+                    <div className="w-4 h-4 rounded-full border-2 border-brand-green border-t-transparent animate-spin flex-shrink-0" />
+                    <p className="text-brand-text text-xs">Generando preguntas...</p>
                   </div>
-                ))}
-                {chatLoading && (
-                  <div className="flex gap-1 px-1">
-                    {[0, 1, 2].map(i => (
-                      <div key={i} className="w-1 h-1 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
-                    ))}
+                ) : exerciseSet ? (
+                  <QuizChat
+                    exercises={exerciseSet}
+                    onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
+                  />
+                ) : null}
+
+                {stats && (
+                  <div>
+                    <SectionLabel>Tu progreso</SectionLabel>
+                    <div className="bg-brand-card rounded-xl p-4 border border-white/5 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-brand-orange/15 flex items-center justify-center">
+                          <span className="text-brand-orange font-black text-sm">{stats.streak || 0}</span>
+                        </div>
+                        <div>
+                          <p className="text-white text-sm font-medium">Racha actual</p>
+                          <p className="text-brand-text text-xs">{stats.streak || 0} día{stats.streak !== 1 ? 's' : ''} seguido{stats.streak !== 1 ? 's' : ''}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <ProgressBar label="Vocabulario aprendido" value={stats.wordsTotal || 0} max={100} color="bg-brand-green" />
+                        <ProgressBar label="Lecciones completadas" value={stats.songsCompleted || 0} max={12} color="bg-brand-green" />
+                        <ProgressBar label="Ejercicios hoy" value={stats.exercisesToday || 0} max={5} color="bg-brand-orange" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {relatedSongs.length > 0 && (
+                  <div>
+                    <SectionLabel>Canciones relacionadas</SectionLabel>
+                    <div className="space-y-2">
+                      {relatedSongs.map((s) => (
+                        <button
+                          key={s.spotifyId}
+                          onClick={() => router.push(`/lesson/${s.spotifyId}`)}
+                          className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-brand-hover transition-colors group text-left"
+                        >
+                          {s.imageUrl ? (
+                            <img src={s.imageUrl} alt={s.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-brand-hover flex-shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-medium truncate group-hover:text-brand-green transition-colors">{s.title}</p>
+                            <p className="text-brand-text text-[10px] truncate">{s.artist}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="flex gap-1.5 pt-2 border-t border-white/5">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
-                  placeholder="Pregunta algo..."
-                  className="flex-1 bg-brand-hover border border-white/5 rounded-lg px-2 py-1.5 text-white text-xs placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
-                />
-                <button
-                  onClick={handleChatSend}
-                  disabled={!chatInput.trim() || chatLoading}
-                  className="px-2 py-1.5 rounded-lg bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-xs"
-                >
-                  →
-                </button>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {stats && (
-            <div>
-              <SectionLabel>Tu progreso</SectionLabel>
-              <div className="bg-brand-card rounded-xl p-4 border border-white/5 space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-brand-orange/15 flex items-center justify-center">
-                    <span className="text-brand-orange font-black text-sm">{stats.streak || 0}</span>
-                  </div>
-                  <div>
-                    <p className="text-white text-sm font-medium">Racha actual</p>
-                    <p className="text-brand-text text-xs">{stats.streak || 0} día{stats.streak !== 1 ? 's' : ''} seguido{stats.streak !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <ProgressBar
-                    label="Vocabulario aprendido"
-                    value={stats.wordsTotal || 0}
-                    max={100}
-                    color="bg-brand-green"
-                  />
-                  <ProgressBar
-                    label="Lecciones completadas"
-                    value={stats.songsCompleted || 0}
-                    max={12}
-                    color="bg-brand-green"
-                  />
-                  <ProgressBar
-                    label="Ejercicios hoy"
-                    value={stats.exercisesToday || 0}
-                    max={5}
-                    color="bg-brand-orange"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {relatedSongs.length > 0 && (
-            <div>
-              <SectionLabel>Canciones relacionadas</SectionLabel>
-              <div className="space-y-2">
-                {relatedSongs.map((s) => (
-                  <button
-                    key={s.spotifyId}
-                    onClick={() => router.push(`/lesson/${s.spotifyId}`)}
-                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-brand-hover transition-colors group text-left"
-                  >
-                    {s.imageUrl ? (
-                      <img src={s.imageUrl} alt={s.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded-lg bg-brand-hover flex-shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <p className="text-white text-xs font-medium truncate group-hover:text-brand-green transition-colors">{s.title}</p>
-                      <p className="text-brand-text text-[10px] truncate">{s.artist}</p>
+            {sideMode === 'chat' && (
+              <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      {msg.role === 'ai' ? (
+                        <p className="text-brand-text text-xs max-w-[85%] leading-relaxed">{msg.content}</p>
+                      ) : (
+                        <span className="bg-brand-purple text-white text-xs px-2 py-1 rounded-lg max-w-[85%] leading-relaxed">
+                          {msg.content}
+                        </span>
+                      )}
                     </div>
+                  ))}
+                  {chatLoading && (
+                    <div className="flex gap-1 px-1">
+                      {[0, 1, 2].map(i => (
+                        <div key={i} className="w-1 h-1 bg-brand-text rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-shrink-0 flex gap-1.5 p-4 pt-2 border-t border-white/5">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleChatSend()}
+                    placeholder="Preguntá sobre la canción..."
+                    className="flex-1 bg-brand-hover border border-white/5 rounded-lg px-2 py-1.5 text-white text-xs placeholder-brand-text focus:outline-none focus:border-brand-purple/50 transition-colors"
+                  />
+                  <button
+                    onClick={handleChatSend}
+                    disabled={!chatInput.trim() || chatLoading}
+                    className="px-2 py-1.5 rounded-lg bg-brand-purple hover:bg-violet-500 disabled:opacity-40 transition-colors flex items-center justify-center text-white text-xs"
+                  >
+                    →
                   </button>
-                ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+          </div>
 
         </aside>
 
