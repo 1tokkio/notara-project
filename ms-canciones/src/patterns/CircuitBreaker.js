@@ -1,17 +1,4 @@
-/**
- * CircuitBreaker — Circuit Breaker Pattern
- *
- * Protege al sistema de fallos en cascada cuando un servicio externo (Spotify, LyricsAPI) falla.
- *
- * Estados:
- *  - CLOSED:    Funcionamiento normal, las llamadas pasan.
- *  - OPEN:      El servicio falló demasiado, bloqueamos llamadas por `resetTimeout` ms.
- *  - HALF_OPEN: Después del timeout, probamos con UNA sola llamada para ver si el servicio se recuperó.
- *
- * Si el servicio falla más de `failureThreshold` veces consecutivas → pasa a OPEN.
- * Si en HALF_OPEN la llamada de prueba falla → vuelve a OPEN.
- * Si en HALF_OPEN la llamada de prueba tiene éxito → vuelve a CLOSED.
- */
+// Patrón Circuit Breaker — protege de fallos en cascada cuando Spotify o LyricsAPI no responden.
 
 const STATE = {
   CLOSED: 'CLOSED',
@@ -20,12 +7,6 @@ const STATE = {
 };
 
 class CircuitBreaker {
-  /**
-   * @param {string} name - Nombre del servicio protegido (para logs)
-   * @param {object} options
-   * @param {number} options.failureThreshold - Número de fallos consecutivos antes de abrir (default: 3)
-   * @param {number} options.resetTimeout     - Tiempo en ms antes de intentar HALF_OPEN (default: 30000)
-   */
   constructor(name, options = {}) {
     this.name = name;
     this.failureThreshold = options.failureThreshold ?? 3;
@@ -36,13 +17,6 @@ class CircuitBreaker {
     this.lastFailureTime = null;
   }
 
-  /**
-   * Ejecuta la función protegida.
-   * Si el circuito está OPEN y no ha pasado el resetTimeout, lanza error inmediatamente.
-   * @param {Function} fn - Función async que realiza la llamada al servicio externo
-   * @param {Function} fallback - Función que se ejecuta cuando el circuito está OPEN (opcional)
-   * @returns {Promise<any>}
-   */
   async execute(fn, fallback = null) {
     if (this.state === STATE.OPEN) {
       const elapsed = Date.now() - this.lastFailureTime;

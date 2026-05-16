@@ -1,12 +1,4 @@
-/**
- * LessonFactory — Factory Method Pattern
- *
- * Crea instancias de diferentes tipos de lección según las características
- * de la canción (vocabulario, gramática, pronunciación).
- * Centraliza la lógica de creación y permite extender sin modificar el código cliente.
- */
-
-// ─── Clases base y concretas ──────────────────────────────────────────────────
+// Patrón Factory Method — crea el tipo de lección según el género musical de la canción.
 
 class Lesson {
   constructor(songId, title, artist) {
@@ -21,11 +13,6 @@ class Lesson {
   }
 }
 
-/**
- * VocabularyLesson
- * Enfocada en palabras nuevas, definiciones y uso en contexto.
- * Se activa para canciones con vocabulario variado (géneros: pop, indie, soul).
- */
 class VocabularyLesson extends Lesson {
   constructor(songId, title, artist) {
     super(songId, title, artist);
@@ -43,11 +30,6 @@ class VocabularyLesson extends Lesson {
   }
 }
 
-/**
- * GrammarLesson
- * Enfocada en estructuras gramaticales, tiempos verbales y sintaxis.
- * Se activa para canciones con estructuras narrativas complejas (géneros: rock, country, folk).
- */
 class GrammarLesson extends Lesson {
   constructor(songId, title, artist) {
     super(songId, title, artist);
@@ -65,11 +47,6 @@ class GrammarLesson extends Lesson {
   }
 }
 
-/**
- * PronunciationLesson
- * Enfocada en fonética, ritmo y entonación usando el ritmo de la música.
- * Se activa para canciones con ritmo marcado o rap (géneros: hip-hop, reggaeton, EDM).
- */
 class PronunciationLesson extends Lesson {
   constructor(songId, title, artist) {
     super(songId, title, artist);
@@ -87,17 +64,7 @@ class PronunciationLesson extends Lesson {
   }
 }
 
-// ─── Factory ──────────────────────────────────────────────────────────────────
-
 class LessonFactory {
-  /**
-   * Determina el tipo de lección apropiado según el género y artista.
-   * @param {string} genre - Género musical de Spotify (puede venir vacío)
-   * @param {string} songId
-   * @param {string} title
-   * @param {string} artist
-   * @returns {VocabularyLesson|GrammarLesson|PronunciationLesson}
-   */
   static create(genre = '', songId, title, artist) {
     const g = genre.toLowerCase();
 
@@ -116,13 +83,6 @@ class LessonFactory {
     return new VocabularyLesson(songId, title, artist);
   }
 
-  /**
-   * Crea una lección directamente por tipo (para uso explícito).
-   * @param {'vocabulary'|'grammar'|'pronunciation'} type
-   * @param {string} songId
-   * @param {string} title
-   * @param {string} artist
-   */
   static createByType(type, songId, title, artist) {
     switch (type) {
       case 'vocabulary':

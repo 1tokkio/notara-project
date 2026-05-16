@@ -1,23 +1,4 @@
-/**
- * LyricsDisplayStrategy — Patrón Strategy (GoF)
- *
- * Problema que resuelve:
- *   La visualización de la letra soporta cuatro modos distintos: solo inglés,
- *   solo español, bilingüe y sincronizada. Sin este patrón, el componente
- *   LessonPage contendría bloques if/else profundos por cada modo, acoplando
- *   la lógica de renderizado con la lógica de negocio y dificultando agregar
- *   nuevos modos en el futuro.
- *
- * Solución:
- *   Cada modo de visualización es una estrategia intercambiable que implementa
- *   la misma interfaz: { id, label, render(props) }.
- *   LessonPage actúa como contexto: selecciona la estrategia activa y delega
- *   el renderizado sin conocer los detalles de cada modo.
- *
- * Ventaja de mantenibilidad:
- *   Agregar un nuevo modo (ej: "solo vocabulario resaltado") solo requiere
- *   añadir un nuevo objeto estrategia — sin modificar el componente principal.
- */
+// Patrón Strategy — cada modo de visualización de letra es intercambiable sin tocar LessonPage.
 
 // ─── Estilos compartidos ──────────────────────────────────────────────────────
 
@@ -27,10 +8,6 @@ const lineInactive = `${lineBase} text-white/75 hover:text-white hover:bg-brand-
 
 // ─── Estrategias ──────────────────────────────────────────────────────────────
 
-/**
- * EnOnlyStrategy — muestra únicamente la letra en inglés.
- * Útil cuando el estudiante quiere practicar comprensión sin ver la traducción.
- */
 const EnOnlyStrategy = {
   id: 'en-only',
   label: 'Solo EN',
@@ -52,10 +29,6 @@ const EnOnlyStrategy = {
   },
 };
 
-/**
- * EsOnlyStrategy — muestra únicamente las traducciones al español.
- * Útil cuando el estudiante ya conoce la letra y quiere revisar el significado completo.
- */
 const EsOnlyStrategy = {
   id: 'es-only',
   label: 'Solo ES',
@@ -72,10 +45,6 @@ const EsOnlyStrategy = {
   },
 };
 
-/**
- * BilingualStrategy — muestra inglés y español en columnas paralelas.
- * Facilita la comprensión línea a línea y permite comparar expresiones.
- */
 const BilingualStrategy = {
   id: 'bilingual',
   label: 'EN / ES',
@@ -110,10 +79,6 @@ const BilingualStrategy = {
   },
 };
 
-/**
- * SyncedStrategy — igual que EnOnly pero con highlight automático de la línea activa
- * según el tiempo de reproducción del player. Requiere que la letra esté sincronizada (LRC).
- */
 const SyncedStrategy = {
   id: 'synced',
   label: 'Letra sincronizada',
@@ -131,10 +96,6 @@ export const LYRICS_STRATEGIES = [
   SyncedStrategy,
 ];
 
-/**
- * Devuelve la estrategia activa por su id.
- * Si no se encuentra, retorna EnOnlyStrategy como estrategia por defecto.
- */
 export function getLyricsStrategy(id) {
   return LYRICS_STRATEGIES.find(s => s.id === id) ?? EnOnlyStrategy;
 }
