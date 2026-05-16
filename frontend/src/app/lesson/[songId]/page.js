@@ -270,10 +270,9 @@ export default function LessonPage() {
   const [keywords, setKeywords]     = useState([]);
   const [lessonDone, setLessonDone] = useState(false);
 
-  const [lastPhrase, setLastPhrase]     = useState('');
-  const [exerciseSet, setExerciseSet]   = useState(null);
-  const [exerciseLoading, setExerciseLoading] = useState(false);
-  const [showExercises, setShowExercises] = useState(false);
+  const [exerciseSet, setExerciseSet]         = useState(null);
+  const [exercisesLoading, setExercisesLoading] = useState(false);
+  const [showExercises, setShowExercises]     = useState(false);
 
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput]   = useState('');
@@ -284,8 +283,8 @@ export default function LessonPage() {
     setKeywords([]);
     setActiveLineIdx(-1);
     setLessonDone(false);
-    setLastPhrase('');
     setExerciseSet(null);
+    setExercisesLoading(false);
     setShowExercises(false);
   }, [songId]);
 
@@ -309,6 +308,12 @@ export default function LessonPage() {
           songsApi.search(songData.artist, 4)
             .then((d) => setRelatedSongs((d.results || []).filter(s => s.spotifyId !== songId).slice(0, 3)))
             .catch(() => {});
+
+          setExercisesLoading(true);
+          ia.getExercises(songId, `${songData.title} ${songData.artist}`)
+            .then(data => setExerciseSet(data.exercises || []))
+            .catch(() => {})
+            .finally(() => setExercisesLoading(false));
         }
 
         if (lyricsRes.status === 'fulfilled') {
@@ -367,9 +372,8 @@ export default function LessonPage() {
 
   const handleTimeUpdate = useCallback((seconds) => setCurrentTime(seconds), []);
 
-  const handleLineClick = async (line, idx) => {
+  const handleLineClick = (line) => {
     if (!line.trim()) return;
-    setLastPhrase(line);
   };
 
   const handleChatSend = async () => {
@@ -546,13 +550,13 @@ export default function LessonPage() {
               {exerciseSet ? (
                 <ExercisePanel
                   exercises={exerciseSet}
-                  onClose={() => { setExerciseSet(null); setShowExercises(false); }}
+                  onClose={() => setShowExercises(false)}
                   onXP={(amount) => { addXP(amount); setStats(getProgress()); }}
                 />
               ) : (
                 <div className="text-center py-4">
                   <div className="w-6 h-6 rounded-full border-2 border-brand-green border-t-transparent animate-spin mx-auto mb-2" />
-                  <p className="text-brand-text text-xs">Generando ejercicios...</p>
+                  <p className="text-brand-text text-xs">Generando quiz...</p>
                 </div>
               )}
             </div>
@@ -591,44 +595,31 @@ export default function LessonPage() {
           </div>
 
           <div>
-            <SectionLabel>Ejercicios</SectionLabel>
+            <SectionLabel>Quiz de la canción</SectionLabel>
             <button
-              onClick={() => {
-                if (!lastPhrase) {
-                  setShowExercises(false);
-                  return;
-                }
-                if (!showExercises) {
-                  setShowExercises(true);
-                  if (!exerciseSet) {
-                    setExerciseLoading(true);
-                    ia.getExercises(songId, lastPhrase)
-                      .then(data => setExerciseSet(data.exercises || []))
-                      .catch(() => {})
-                      .finally(() => setExerciseLoading(false));
-                  }
-                } else {
-                  setShowExercises(false);
-                }
-              }}
-              disabled={exerciseLoading || !lastPhrase}
+              onClick={() => setShowExercises(v => !v)}
+              disabled={exercisesLoading || !exerciseSet}
               className={`w-full py-2.5 px-4 rounded-xl font-semibold text-sm transition-colors ${
                 showExercises
                   ? 'bg-brand-purple text-white hover:bg-violet-500'
                   : 'bg-brand-hover text-white hover:bg-white/10 border border-white/10'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {showExercises ? '✕ Cerrar ejercicios' : '▼ Activar ejercicios'}
+              {exercisesLoading
+                ? 'Preparando quiz...'
+                : showExercises
+                  ? '✕ Cerrar quiz'
+                  : '▼ Ver quiz'}
             </button>
-            {!lastPhrase && (
+            {exercisesLoading && (
               <p className="text-brand-text text-[10px] text-center pt-2 opacity-70">
-                Tocá una línea de la letra
+                Generando preguntas sobre la canción...
               </p>
             )}
           </div>
 
           <div>
-            <SectionLabel>Chat - Preguntas</SectionLabel>
+            <SectionLabel>Chat libre</SectionLabel>
             <div className="bg-brand-card rounded-xl border border-white/10 p-3 space-y-2 max-h-64 flex flex-col">
               <div className="flex-1 overflow-y-auto space-y-2">
                 {chatMessages.slice(0, 8).map((msg, i) => (
