@@ -14,8 +14,8 @@ const PORT             = process.env.API_GATEWAY_PORT  || 3000;
 // ─── Credenciales Spotify ─────────────────────────────────────────────────────
 const SPOTIFY_CLIENT_ID     = process.env.SPOTIFY_CLIENT_ID;
 const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const SPOTIFY_REDIRECT_URI  = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/auth/spotify/callback';
-const FRONTEND_URL          = process.env.FRONTEND_URL || 'http://localhost:3001';
+const SPOTIFY_REDIRECT_URI  = process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:3000/auth/spotify/callback';
+const FRONTEND_URL          = process.env.FRONTEND_URL || 'http://127.0.0.1:3001';
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] }));
 app.use(morgan('[:date[clf]] :method :url :status :res[content-length] - :response-time ms'));
