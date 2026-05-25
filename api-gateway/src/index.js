@@ -7,7 +7,7 @@ const registerIaRoutes = require('./routes/ia');
 
 const app = express();
 
-const MS_USUARIOS_URL  = process.env.MS_USUARIOS_URL  || 'http://localhost:3001';
+const MS_USUARIOS_URL  = process.env.MS_USUARIOS_URL  || 'http://localhost:8081';
 const MS_CANCIONES_URL = process.env.MS_CANCIONES_URL || 'http://localhost:3002';
 const PORT             = process.env.API_GATEWAY_PORT  || 3000;
 
@@ -61,6 +61,43 @@ app.get('/health', (req, res) => {
 
 // Rutas de IA (manejadas directamente, sin proxy)
 registerIaRoutes(app, MS_CANCIONES_URL);
+
+async function forwardToUsuarios(req, res) {
+  const url = `${MS_USUARIOS_URL}${req.originalUrl}`;
+  console.log(`[Gateway] -> ms-usuarios: ${req.method} ${req.originalUrl}`);
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
+    }
+
+    const options = {
+      method: req.method,
+      headers,
+    };
+
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
+      options.body = JSON.stringify(req.body);
+    }
+
+    const upstream = await fetch(url, options);
+    const text = await upstream.text();
+    console.log(`[Gateway] <- ms-usuarios: ${upstream.status} ${req.originalUrl}`);
+
+    res.status(upstream.status);
+    upstream.headers.forEach((value, key) => {
+      if (!['transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+
+    res.send(text);
+  } catch (err) {
+    console.error(`[Gateway] Error al conectar con ms-usuarios:`, err.message);
+    res.status(503).json({ error: 'Servicio ms-usuarios no disponible' });
+  }
+}
 
 const proxyOptions = (target, serviceName) => ({
   target,
@@ -155,6 +192,14 @@ app.get('/auth/spotify/callback', async (req, res) => {
     res.status(500).json({ error: 'Error al intercambiar el código con Spotify' });
   }
 });
+
+app.all('/auth/*', forwardToUsuarios);
+app.all('/users/*', async (req, res) => {
+  // Reescribir /users → /usuarios
+  req.originalUrl = req.originalUrl.replace('/users', '/usuarios');
+  await forwardToUsuarios(req, res);
+});
+app.all('/progress/*', forwardToUsuarios);
 
 // ─── Rutas proxy ──────────────────────────────────────────────────────────────
 app.use('/auth',     createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));

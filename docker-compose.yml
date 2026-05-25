@@ -73,8 +73,8 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET="hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif"
-      - JWT_REFRESH_SECRET="fny4fgy34f6u8gy549t9yr87ufh09w3rfy390ftdf4tfue49"
+      - JWT_SECRET=hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif
+      - JWT_REFRESH_SECRET=fny4fgy34f6u8gy549t9yr87ufh09w3rfy390ftdf4tfue49
       - SERVER_PORT=8081
       - EUREKA_URL=http://eureka-server:8761/eureka
     depends_on:
@@ -161,6 +161,17 @@ services:
     depends_on:
       eureka-server:
         condition: service_healthy
+      ms-usuarios:
+        condition: service_started
+      ms-notas-metas:
+        condition: service_started
+    restart: unless-stopped
+
+  bff:
+    build: ./bff
+    ports:
+      - "8080:8080"
+    depends_on:
       ms-usuarios:
         condition: service_started
       ms-notas-metas:
