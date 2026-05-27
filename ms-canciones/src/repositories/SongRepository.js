@@ -13,11 +13,7 @@ class SongRepository {
    * @returns {Promise<Song|null>}
    */
   async findBySpotifyId(spotifyId) {
-    try {
-      return await Song.findOne({ spotifyId });
-    } catch (e) {
-      return null;
-    }
+    return await Song.findOne({ spotifyId });
   }
 
   /**
@@ -27,16 +23,12 @@ class SongRepository {
    * @returns {Promise<Song>}
    */
   async upsert(songData) {
-    try {
-      const { spotifyId, ...rest } = songData;
-      return await Song.findOneAndUpdate(
-        { spotifyId },
-        { spotifyId, ...rest },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-    } catch (e) {
-      return songData;
-    }
+    const { spotifyId, ...rest } = songData;
+    return await Song.findOneAndUpdate(
+      { spotifyId },
+      { spotifyId, ...rest },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
   }
 
   /**
@@ -45,28 +37,20 @@ class SongRepository {
    * @param {string} lyrics
    * @returns {Promise<Song>}
    */
+  
   async updateLyrics(spotifyId, lyrics) {
-    try {
-      return await Song.findOneAndUpdate(
-        { spotifyId },
-        { lyrics, lyricsUpdatedAt: new Date() },
-        { new: true }
-      );
-    } catch (e) {
-      return null;
-    }
+    return await Song.findOneAndUpdate(
+      { spotifyId },
+      { lyrics, lyricsUpdatedAt: new Date() },
+      { new: true }
+    );
   }
-
   /**
    * Lista todas las canciones (útil para debugging/admin).
    * @returns {Promise<Song[]>}
    */
-  async findAll() {
-    try {
-      return await Song.find().sort({ createdAt: -1 }).limit(50);
-    } catch (e) {
-      return [];
-    }
+   async findAll() {
+    return await Song.find().sort({ createdAt: -1 }).limit(50);
   }
 }
 

@@ -13,6 +13,53 @@ beforeEach(() => {
 });
 
 describe('SpotifyService', () => {
+  describe('getAccessToken', () => {
+    test('lanza error cuando faltan las credenciales de Spotify', async () => {
+      // Resetear módulos y cargar SpotifyService sin credenciales
+      jest.resetModules();
+      delete process.env.SPOTIFY_CLIENT_ID;
+      delete process.env.SPOTIFY_CLIENT_SECRET;
+      mockAxios = { get: jest.fn(), post: jest.fn() };
+      jest.doMock('axios', () => mockAxios);
+      SpotifyService = require('../../services/SpotifyService');
+
+      // Sin fallback en getCircuitState — verificamos que el error se lanza internamente
+      // Mock del CircuitBreaker para que no use fallback
+      mockAxios.post.mockRejectedValue(new Error('should not reach here'));
+
+      // El error de credenciales se lanza antes de llamar a axios, dentro del circuit
+      // Para observarlo, agotamos el circuit (3 fallos) y luego verificamos el estado
+      // Alternativamente, verificamos que axios.post NUNCA fue llamado (error antes de llegar ahí)
+      await SpotifyService.searchSongs('test', 5); // fallback activo, no lanza
+
+      expect(mockAxios.post).not.toHaveBeenCalled();
+    });
+
+    test('propaga el error cuando falla la llamada al endpoint de auth (token error)', async () => {
+      mockAxios.post.mockRejectedValue(new Error('Auth server down'));
+      mockAxios.get.mockResolvedValue({ data: mockSpotifySearchResponse });
+
+      // El error del token se propaga al CircuitBreaker como fallo
+      // Después de 3 intentos el circuit abre y retorna fallback
+      await SpotifyService.searchSongs('q', 5);
+      await SpotifyService.searchSongs('q', 5);
+      await SpotifyService.searchSongs('q', 5);
+
+      // El circuit abrió: post fue llamado exactamente 3 veces (una por intento antes de abrir)
+      expect(mockAxios.post).toHaveBeenCalledTimes(3);
+    });
+
+    test('reutiliza el token cacheado sin volver a llamar al endpoint de auth', async () => {
+      mockAxios.post.mockResolvedValue({ data: mockTokenResponse });
+      mockAxios.get.mockResolvedValue({ data: mockSpotifySearchResponse });
+
+      await SpotifyService.searchSongs('primera llamada', 5);
+      await SpotifyService.searchSongs('segunda llamada', 5);
+
+      expect(mockAxios.post).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('searchSongs', () => {
     test('retorna lista de canciones mapeadas desde Spotify', async () => {
       mockAxios.post.mockResolvedValueOnce({ data: mockTokenResponse });

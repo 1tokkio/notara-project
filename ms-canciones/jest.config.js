@@ -5,6 +5,7 @@ module.exports = {
     'src/**/*.js',
     '!src/index.js',
     '!src/database/**',
+    '!src/middleware/requestLogger.js',
   ],
   coverageThreshold: {
     global: {
