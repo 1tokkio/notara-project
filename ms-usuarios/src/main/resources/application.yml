@@ -6,7 +6,7 @@ spring:
     name: ms-usuarios
 
   datasource:
-    url: jdbc:postgresql://postgres-usuarios:5432/notara-usuarios-db
+    url: jdbc:postgresql://localhost:5432/notara-usuarios-db
     username: postgres
     password: password
     driver-class-name: org.postgresql.Driver

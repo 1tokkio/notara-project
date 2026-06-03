@@ -146,20 +146,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Byte Buddy actualizado: soporta Java 25 -->
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy</artifactId>
-            <version>${byte-buddy.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>net.bytebuddy</groupId>
-            <artifactId>byte-buddy-agent</artifactId>
-            <version>${byte-buddy.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <!-- Build -->
