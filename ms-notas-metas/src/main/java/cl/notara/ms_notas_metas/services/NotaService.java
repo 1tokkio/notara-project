@@ -29,8 +29,7 @@ public class NotaService {
 
         nota.setEstado(EstadoNota.PENDIENTE);
 
-        Nota notaGuardada =
-                notaRepository.save(nota);
+        Nota notaGuardada = notaRepository.save(nota);
 
         System.out.println(
                 " Nota "
@@ -51,34 +50,39 @@ public class NotaService {
                             nota.getIdUsuario()
                     );
 
-            if (usuario != null) {
-
-                notaGuardada.setEstado(
-                        EstadoNota.CONFIRMADA
-                );
+            if (usuario == null) {
 
                 System.out.println(
-                        " Nota "
-                                + notaGuardada.getId()
-                                + " CONFIRMADA"
+                        " Usuario no existe"
                 );
 
-                return notaRepository.save(
-                        notaGuardada
+                notaRepository.deleteById(
+                        notaGuardada.getId()
+                );
+
+                throw new IllegalArgumentException(
+                        "Usuario no válido"
                 );
             }
 
+            notaGuardada.setEstado(
+                    EstadoNota.CONFIRMADA
+            );
+
             System.out.println(
-                    " Usuario no existe"
+                    " Nota "
+                            + notaGuardada.getId()
+                            + " CONFIRMADA"
             );
 
-            notaRepository.deleteById(
-                    notaGuardada.getId()
+            return notaRepository.save(
+                    notaGuardada
             );
 
-            throw new RuntimeException(
-                    "Usuario no válido"
-            );
+        } catch (IllegalArgumentException e) {
+
+            // Usuario no válido: ya se eliminó la nota.
+            throw e;
 
         } catch (Exception e) {
 

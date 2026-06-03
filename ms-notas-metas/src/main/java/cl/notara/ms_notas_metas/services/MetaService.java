@@ -4,9 +4,7 @@ import cl.notara.ms_notas_metas.client.UsuarioClient;
 import cl.notara.ms_notas_metas.dto.UsuarioDTO;
 import cl.notara.ms_notas_metas.exceptions.ResourceNotFoundException;
 import cl.notara.ms_notas_metas.models.EstadoMeta;
-import cl.notara.ms_notas_metas.models.EstadoNota;
 import cl.notara.ms_notas_metas.models.Meta;
-import cl.notara.ms_notas_metas.models.Nota;
 import cl.notara.ms_notas_metas.repositories.MetaRepository;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +16,8 @@ public class MetaService {
     private final MetaRepository metaRepository;
     private final UsuarioClient usuarioCliente;
 
-    public MetaService(MetaRepository metaRepository, UsuarioClient usuarioCliente) {
+    public MetaService(MetaRepository metaRepository,
+                       UsuarioClient usuarioCliente) {
         this.metaRepository = metaRepository;
         this.usuarioCliente = usuarioCliente;
     }
@@ -31,19 +30,16 @@ public class MetaService {
 
         meta.setEstado(EstadoMeta.PENDIENTE);
 
-        Meta metaGuardada =
-                metaRepository.save(meta);
+        Meta metaGuardada = metaRepository.save(meta);
 
         System.out.println(
-                " Meta "
-                        + metaGuardada.getId()
-                        + " creada en PENDIENTE"
+                "Meta " + metaGuardada.getId() + " creada en PENDIENTE"
         );
 
         try {
 
             System.out.println(
-                    " Validando usuario "
+                    "Validando usuario "
                             + meta.getIdUsuario()
                             + " en ms-usuarios"
             );
@@ -53,39 +49,42 @@ public class MetaService {
                             meta.getIdUsuario()
                     );
 
-            if (usuario != null) {
+            if (usuario == null) {
 
-                metaGuardada.setEstado(
-                        EstadoMeta.CONFIRMADA
+                System.out.println("Usuario no existe");
+
+                metaRepository.deleteById(
+                        metaGuardada.getId()
                 );
 
-                System.out.println(
-                        " Meta "
-                                + metaGuardada.getId()
-                                + " CONFIRMADA"
-                );
-
-                return metaRepository.save(
-                        metaGuardada
+                throw new IllegalArgumentException(
+                        "Usuario no válido"
                 );
             }
 
+            metaGuardada.setEstado(
+                    EstadoMeta.CONFIRMADA
+            );
+
             System.out.println(
-                    " Usuario no existe"
+                    "Meta "
+                            + metaGuardada.getId()
+                            + " CONFIRMADA"
             );
 
-            metaRepository.deleteById(
-                    metaGuardada.getId()
+            return metaRepository.save(
+                    metaGuardada
             );
 
-            throw new RuntimeException(
-                    "Usuario no válido"
-            );
+        } catch (IllegalArgumentException e) {
+
+            // Usuario no válido: ya se eliminó la meta.
+            throw e;
 
         } catch (Exception e) {
 
             System.out.println(
-                    " Error en solicitud: "
+                    "Error en solicitud: "
                             + e.getMessage()
             );
 
@@ -101,7 +100,11 @@ public class MetaService {
 
     public Meta obtener(Long id) {
         return metaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meta no encontrada con id: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Meta no encontrada con id: " + id
+                        )
+                );
     }
 
     public List<Meta> obtenerPorUsuario(Long idUsuario) {
@@ -109,15 +112,24 @@ public class MetaService {
     }
 
     public void eliminar(Long id) {
+
         if (!metaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Meta no encontrada con id: " + id);
+            throw new ResourceNotFoundException(
+                    "Meta no encontrada con id: " + id
+            );
         }
+
         metaRepository.deleteById(id);
     }
 
     public Meta actualizar(Long id, Meta metaActualizada) {
+
         Meta meta = metaRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Meta no encontrada con id: " + id));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Meta no encontrada con id: " + id
+                        )
+                );
 
         meta.setNombre(metaActualizada.getNombre());
         meta.setDescripcion(metaActualizada.getDescripcion());
