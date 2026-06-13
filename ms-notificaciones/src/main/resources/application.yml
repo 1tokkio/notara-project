@@ -1,0 +1,53 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: ms-notificaciones
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:rabbitmq}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+eureka:
+  client:
+    enabled: true
+    service-url:
+      defaultZone: ${EUREKA_URL:http://eureka-server:8761/eureka}
+  instance:
+    hostname: ms-notificaciones
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+notificaciones:
+  email:
+    from: ${MAIL_FROM:noreply@notara.cl}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

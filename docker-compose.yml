@@ -18,6 +18,39 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-pagos:
+    image: postgres:16-alpine
+    container_name: notara-postgres-pagos
+    environment:
+      POSTGRES_DB: notara-pagos-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_pagos_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: notara-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "check_port_connectivity" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   postgres-notas-metas:
     image: postgres:16-alpine
     container_name: notara-postgres-notas-metas
@@ -124,6 +157,54 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  ms-pagos-subscripciones:
+    build: ./ms-pagos-subscripciones
+    container_name: notara-ms-pagos-subscripciones
+    ports:
+      - '8084:8084'
+    environment:
+      - SERVER_PORT=8084
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-pagos:5432/notara-pagos-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    depends_on:
+      postgres-pagos:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-notificaciones:
+    build: ./ms-notificaciones
+    container_name: notara-ms-notificaciones
+    ports:
+      - '8085:8085'
+    environment:
+      - SERVER_PORT=8085
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@notara.cl}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
   api-gateway:
     build: ./api-gateway
     container_name: notara-gateway
@@ -132,6 +213,8 @@ services:
     environment:
       - MS_USUARIOS_URL=http://ms-usuarios:8081
       - MS_CANCIONES_URL=http://ms-canciones:3002
+      - MS_NOTAS_METAS_URL=http://ms-notas-metas:8083
+      - MS_PAGOS_URL=http://ms-pagos-subscripciones:8084
       - API_GATEWAY_PORT=3000
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
@@ -139,6 +222,8 @@ services:
     depends_on:
       - ms-usuarios
       - ms-canciones
+      - ms-notas-metas
+      - ms-pagos-subscripciones
     restart: unless-stopped
 
   frontend:
@@ -150,32 +235,6 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:3000
     depends_on:
       - api-gateway
-    restart: unless-stopped
-
-  api-gateway001:
-    build: ./api-getaway-001
-    ports:
-      - "8086:8086"
-    environment:
-      - EUREKA_URL=http://eureka-server:8761/eureka
-    depends_on:
-      eureka-server:
-        condition: service_healthy
-      ms-usuarios:
-        condition: service_started
-      ms-notas-metas:
-        condition: service_started
-    restart: unless-stopped
-
-  bff:
-    build: ./bff
-    ports:
-      - "8080:8080"
-    depends_on:
-      ms-usuarios:
-        condition: service_started
-      ms-notas-metas:
-        condition: service_started
     restart: unless-stopped
 
 
@@ -197,5 +256,6 @@ services:
 volumes:
   postgres_usuarios_data:
   postgres_notas_metas_data:
+  postgres_pagos_data:
   mongo_data:
   redis_data:

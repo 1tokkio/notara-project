@@ -7,9 +7,11 @@ const registerIaRoutes = require('./routes/ia');
 
 const app = express();
 
-const MS_USUARIOS_URL  = process.env.MS_USUARIOS_URL  || 'http://localhost:8081';
-const MS_CANCIONES_URL = process.env.MS_CANCIONES_URL || 'http://localhost:3002';
-const PORT             = process.env.API_GATEWAY_PORT  || 3000;
+const MS_USUARIOS_URL   = process.env.MS_USUARIOS_URL   || 'http://localhost:8081';
+const MS_CANCIONES_URL  = process.env.MS_CANCIONES_URL  || 'http://localhost:3002';
+const MS_NOTAS_METAS_URL = process.env.MS_NOTAS_METAS_URL || 'http://localhost:8083';
+const MS_PAGOS_URL       = process.env.MS_PAGOS_URL       || 'http://localhost:8084';
+const PORT              = process.env.API_GATEWAY_PORT   || 3000;
 
 // ─── Credenciales Spotify ─────────────────────────────────────────────────────
 const SPOTIFY_CLIENT_ID     = process.env.SPOTIFY_CLIENT_ID;
@@ -37,6 +39,24 @@ app.get('/', (req, res) => {
       'GET  /songs/:id':             'Metadatos de una canción',
       'GET  /songs/:id/lyrics':      'Letra de la canción',
       'GET  /songs/:id/lesson-type': 'Tipo de lección',
+      'GET  /notas':                  'Listar todas las notas',
+      'POST /notas':                 'Crear una nota',
+      'GET  /notas/:id':             'Obtener nota por ID',
+      'GET  /notas/usuario/:id':     'Notas de un usuario',
+      'PUT  /notas/:id':             'Actualizar nota',
+      'DELETE /notas/:id':           'Eliminar nota',
+      'GET  /metas':                 'Listar todas las metas',
+      'POST /metas':                 'Crear una meta',
+      'GET  /metas/:id':             'Obtener meta por ID',
+      'GET  /metas/usuario/:id':     'Metas de un usuario',
+      'PUT  /metas/:id':             'Actualizar meta',
+      'DELETE /metas/:id':           'Eliminar meta',
+      'GET  /suscripciones':               'Listar suscripciones',
+      'POST /suscripciones':               'Crear suscripción (publica evento RabbitMQ)',
+      'GET  /suscripciones/:id':           'Obtener suscripción por ID',
+      'GET  /suscripciones/usuario/:id':   'Suscripciones de un usuario',
+      'PUT  /suscripciones/:id/cancelar':  'Cancelar suscripción',
+      'PUT  /suscripciones/:id/renovar':   'Renovar suscripción',
       'POST /ia/explain':            'Explicar frase seleccionada de la letra',
       'POST /ia/exercises':          'Generar ejercicios sobre una frase',
       'POST /ia/chat':               'Chat con tutor de IA',
@@ -53,8 +73,10 @@ app.get('/health', (req, res) => {
     service: 'api-gateway',
     uptime: process.uptime(),
     services: {
-      'ms-usuarios':  MS_USUARIOS_URL,
-      'ms-canciones': MS_CANCIONES_URL,
+      'ms-usuarios':              MS_USUARIOS_URL,
+      'ms-canciones':             MS_CANCIONES_URL,
+      'ms-notas-metas':           MS_NOTAS_METAS_URL,
+      'ms-pagos-subscripciones':  MS_PAGOS_URL,
     },
   });
 });
@@ -120,6 +142,70 @@ const proxyOptions = (target, serviceName) => ({
     },
   },
 });
+
+async function forwardToPagos(req, res) {
+  const url = `${MS_PAGOS_URL}${req.originalUrl}`;
+  console.log(`[Gateway] -> ms-pagos-subscripciones: ${req.method} ${req.originalUrl}`);
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers['Authorization'] = req.headers.authorization;
+
+    const options = { method: req.method, headers };
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
+      options.body = JSON.stringify(req.body);
+    }
+
+    const upstream = await fetch(url, options);
+    const text = await upstream.text();
+    console.log(`[Gateway] <- ms-pagos-subscripciones: ${upstream.status} ${req.originalUrl}`);
+
+    res.status(upstream.status);
+    upstream.headers.forEach((value, key) => {
+      if (!['transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+    res.send(text);
+  } catch (err) {
+    console.error(`[Gateway] Error al conectar con ms-pagos-subscripciones:`, err.message);
+    res.status(503).json({ error: 'Servicio ms-pagos-subscripciones no disponible' });
+  }
+}
+
+async function forwardToNotasMetas(req, res) {
+  const url = `${MS_NOTAS_METAS_URL}${req.originalUrl}`;
+  console.log(`[Gateway] -> ms-notas-metas: ${req.method} ${req.originalUrl}`);
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) {
+      headers['Authorization'] = req.headers.authorization;
+    }
+
+    const options = { method: req.method, headers };
+
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) {
+      options.body = JSON.stringify(req.body);
+    }
+
+    const upstream = await fetch(url, options);
+    const text = await upstream.text();
+    console.log(`[Gateway] <- ms-notas-metas: ${upstream.status} ${req.originalUrl}`);
+
+    res.status(upstream.status);
+    upstream.headers.forEach((value, key) => {
+      if (!['transfer-encoding', 'connection'].includes(key.toLowerCase())) {
+        res.setHeader(key, value);
+      }
+    });
+
+    res.send(text);
+  } catch (err) {
+    console.error(`[Gateway] Error al conectar con ms-notas-metas:`, err.message);
+    res.status(503).json({ error: 'Servicio ms-notas-metas no disponible' });
+  }
+}
 
 // ─── Spotify OAuth (ANTES del proxy /auth para que Express las intercepte) ───
 
@@ -206,18 +292,26 @@ app.use('/auth',     createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usu
 app.use('/users',    createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
 app.use('/progress', createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
 app.use('/songs',    createProxyMiddleware(proxyOptions(MS_CANCIONES_URL, 'ms-canciones')));
+app.all('/notas',   forwardToNotasMetas);
+app.all('/notas/*', forwardToNotasMetas);
+app.all('/metas',            forwardToNotasMetas);
+app.all('/metas/*',          forwardToNotasMetas);
+app.all('/suscripciones',    forwardToPagos);
+app.all('/suscripciones/*',  forwardToPagos);
 
 app.use((req, res) => {
   res.status(404).json({
     error: 'Ruta no encontrada',
     path: req.originalUrl,
-    availableRoutes: ['/auth', '/auth/spotify', '/users', '/songs', '/ia', '/health'],
+    availableRoutes: ['/auth', '/auth/spotify', '/users', '/songs', '/notas', '/metas', '/suscripciones', '/ia', '/health'],
   });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`[Gateway] Servidor iniciado en http://localhost:${PORT}`);
-  console.log(`[Gateway] ms-usuarios  -> ${MS_USUARIOS_URL}`);
-  console.log(`[Gateway] ms-canciones -> ${MS_CANCIONES_URL}`);
-  console.log(`[Gateway] IA           -> Claude Haiku (${process.env.ANTHROPIC_API_KEY ? 'configurada' : 'SIN API KEY'})`);
+  console.log(`[Gateway] ms-usuarios    -> ${MS_USUARIOS_URL}`);
+  console.log(`[Gateway] ms-canciones   -> ${MS_CANCIONES_URL}`);
+  console.log(`[Gateway] ms-notas-metas           -> ${MS_NOTAS_METAS_URL}`);
+  console.log(`[Gateway] ms-pagos-subscripciones  -> ${MS_PAGOS_URL}`);
+  console.log(`[Gateway] IA             -> Claude Haiku (${process.env.ANTHROPIC_API_KEY ? 'configurada' : 'SIN API KEY'})`);
 });
