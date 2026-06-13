@@ -157,6 +157,41 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  postgres-vocabulario:
+    image: postgres:16-alpine
+    container_name: notara-postgres-vocabulario
+    environment:
+      POSTGRES_DB: notara-vocabulario-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_vocabulario_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ms-vocabulario:
+    build: ./ms-vocabulario
+    container_name: notara-ms-vocabulario
+    ports:
+      - '8086:8086'
+    environment:
+      - SERVER_PORT=8086
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-vocabulario:5432/notara-vocabulario-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    depends_on:
+      postgres-vocabulario:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
   ms-pagos-subscripciones:
     build: ./ms-pagos-subscripciones
     container_name: notara-ms-pagos-subscripciones
@@ -215,6 +250,7 @@ services:
       - MS_CANCIONES_URL=http://ms-canciones:3002
       - MS_NOTAS_METAS_URL=http://ms-notas-metas:8083
       - MS_PAGOS_URL=http://ms-pagos-subscripciones:8084
+      - MS_VOCABULARIO_URL=http://ms-vocabulario:8086
       - API_GATEWAY_PORT=3000
       - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
       - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
@@ -224,6 +260,7 @@ services:
       - ms-canciones
       - ms-notas-metas
       - ms-pagos-subscripciones
+      - ms-vocabulario
     restart: unless-stopped
 
   frontend:
@@ -257,5 +294,6 @@ volumes:
   postgres_usuarios_data:
   postgres_notas_metas_data:
   postgres_pagos_data:
+  postgres_vocabulario_data:
   mongo_data:
   redis_data:

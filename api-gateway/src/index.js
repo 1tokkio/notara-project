@@ -10,7 +10,8 @@ const app = express();
 const MS_USUARIOS_URL   = process.env.MS_USUARIOS_URL   || 'http://localhost:8081';
 const MS_CANCIONES_URL  = process.env.MS_CANCIONES_URL  || 'http://localhost:3002';
 const MS_NOTAS_METAS_URL = process.env.MS_NOTAS_METAS_URL || 'http://localhost:8083';
-const MS_PAGOS_URL       = process.env.MS_PAGOS_URL       || 'http://localhost:8084';
+const MS_PAGOS_URL        = process.env.MS_PAGOS_URL        || 'http://localhost:8084';
+const MS_VOCABULARIO_URL  = process.env.MS_VOCABULARIO_URL  || 'http://localhost:8086';
 const PORT              = process.env.API_GATEWAY_PORT   || 3000;
 
 // ─── Credenciales Spotify ─────────────────────────────────────────────────────
@@ -56,7 +57,16 @@ app.get('/', (req, res) => {
       'GET  /suscripciones/:id':           'Obtener suscripción por ID',
       'GET  /suscripciones/usuario/:id':   'Suscripciones de un usuario',
       'PUT  /suscripciones/:id/cancelar':  'Cancelar suscripción',
-      'PUT  /suscripciones/:id/renovar':   'Renovar suscripción',
+      'PUT  /suscripciones/:id/renovar':              'Renovar suscripción',
+      'GET  /vocabulario/palabras/categorias':         'Resumen de palabras por categoría',
+      'GET  /vocabulario/palabras/categoria/:cat':     'Palabras de una categoría',
+      'POST /vocabulario/partidas':                    'Iniciar partida (devuelve primera pregunta)',
+      'GET  /vocabulario/partidas/:id/pregunta':       'Obtener pregunta actual',
+      'POST /vocabulario/partidas/:id/responder':      'Enviar respuesta (con validación de timer)',
+      'PUT  /vocabulario/partidas/:id/abandonar':      'Abandonar partida',
+      'GET  /vocabulario/ranking':                     'Ranking global (top 10)',
+      'GET  /vocabulario/ranking/categoria/:cat':      'Ranking por categoría',
+      'GET  /vocabulario/ranking/usuario/:id':         'Estadísticas de un usuario',
       'POST /ia/explain':            'Explicar frase seleccionada de la letra',
       'POST /ia/exercises':          'Generar ejercicios sobre una frase',
       'POST /ia/chat':               'Chat con tutor de IA',
@@ -77,6 +87,7 @@ app.get('/health', (req, res) => {
       'ms-canciones':             MS_CANCIONES_URL,
       'ms-notas-metas':           MS_NOTAS_METAS_URL,
       'ms-pagos-subscripciones':  MS_PAGOS_URL,
+      'ms-vocabulario':           MS_VOCABULARIO_URL,
     },
   });
 });
@@ -142,6 +153,28 @@ const proxyOptions = (target, serviceName) => ({
     },
   },
 });
+
+async function forwardToVocabulario(req, res) {
+  const url = `${MS_VOCABULARIO_URL}${req.originalUrl}`;
+  console.log(`[Gateway] -> ms-vocabulario: ${req.method} ${req.originalUrl}`);
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers['Authorization'] = req.headers.authorization;
+    const options = { method: req.method, headers };
+    if (['POST', 'PUT', 'PATCH'].includes(req.method) && req.body) options.body = JSON.stringify(req.body);
+    const upstream = await fetch(url, options);
+    const text = await upstream.text();
+    console.log(`[Gateway] <- ms-vocabulario: ${upstream.status} ${req.originalUrl}`);
+    res.status(upstream.status);
+    upstream.headers.forEach((v, k) => {
+      if (!['transfer-encoding', 'connection'].includes(k.toLowerCase())) res.setHeader(k, v);
+    });
+    res.send(text);
+  } catch (err) {
+    console.error(`[Gateway] Error al conectar con ms-vocabulario:`, err.message);
+    res.status(503).json({ error: 'Servicio ms-vocabulario no disponible' });
+  }
+}
 
 async function forwardToPagos(req, res) {
   const url = `${MS_PAGOS_URL}${req.originalUrl}`;
@@ -298,6 +331,8 @@ app.all('/metas',            forwardToNotasMetas);
 app.all('/metas/*',          forwardToNotasMetas);
 app.all('/suscripciones',    forwardToPagos);
 app.all('/suscripciones/*',  forwardToPagos);
+app.all('/vocabulario',      forwardToVocabulario);
+app.all('/vocabulario/*',    forwardToVocabulario);
 
 app.use((req, res) => {
   res.status(404).json({
