@@ -161,3 +161,100 @@ export const progress = {
       body: JSON.stringify({ songId, lessonType, wordsLearned }),
     }),
 };
+
+// ─── Notas ────────────────────────────────────────────────────────────────────
+
+export const notas = {
+  porUsuario: (idUsuario) =>
+    request(`/notas/usuario/${idUsuario}`),
+
+  crear: (titulo, contenido, idUsuario) =>
+    request('/notas', {
+      method: 'POST',
+      body: JSON.stringify({ titulo, contenido, idUsuario }),
+    }),
+
+  actualizar: (id, titulo, contenido, idUsuario) =>
+    request(`/notas/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ titulo, contenido, idUsuario }),
+    }),
+
+  eliminar: (id) =>
+    request(`/notas/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Metas ────────────────────────────────────────────────────────────────────
+
+export const metas = {
+  porUsuario: (idUsuario) =>
+    request(`/metas/usuario/${idUsuario}`),
+
+  crear: (datos) =>
+    request('/metas', {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    }),
+
+  actualizar: (id, datos) =>
+    request(`/metas/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(datos),
+    }),
+
+  eliminar: (id) =>
+    request(`/metas/${id}`, { method: 'DELETE' }),
+};
+
+// ─── Suscripciones ────────────────────────────────────────────────────────────
+
+export const suscripciones = {
+  porUsuario: (idUsuario) =>
+    request(`/suscripciones/usuario/${idUsuario}`),
+
+  crear: (datos) =>
+    request('/suscripciones', {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    }),
+
+  cancelar: (id) =>
+    request(`/suscripciones/${id}/cancelar`, { method: 'PUT' }),
+
+  renovar: (id, fechaFin) =>
+    request(`/suscripciones/${id}/renovar`, {
+      method: 'PUT',
+      body: JSON.stringify({ fechaFin }),
+    }),
+};
+
+// ─── Vocabulario ──────────────────────────────────────────────────────────────
+
+export const vocabulario = {
+  categorias: () =>
+    request('/vocabulario/palabras/categorias'),
+
+  iniciarPartida: (idUsuario, nombreUsuario, categoria, totalPreguntas = 10, tiempoMaximoSegundos = 30) =>
+    request('/vocabulario/partidas', {
+      method: 'POST',
+      body: JSON.stringify({ idUsuario, nombreUsuario, categoria, totalPreguntas, tiempoMaximoSegundos }),
+    }),
+
+  preguntaActual: (idPartida) =>
+    request(`/vocabulario/partidas/${idPartida}/pregunta`),
+
+  responder: (idPartida, respuesta) =>
+    request(`/vocabulario/partidas/${idPartida}/responder`, {
+      method: 'POST',
+      body: JSON.stringify({ respuesta }),
+    }),
+
+  abandonar: (idPartida) =>
+    request(`/vocabulario/partidas/${idPartida}/abandonar`, { method: 'PUT' }),
+
+  rankingGlobal: () =>
+    request('/vocabulario/ranking'),
+
+  estadisticasUsuario: (idUsuario) =>
+    request(`/vocabulario/ranking/usuario/${idUsuario}`),
+};

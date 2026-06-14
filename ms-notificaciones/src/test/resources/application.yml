@@ -1,0 +1,15 @@
+spring:
+  mail:
+    host: localhost
+    port: 1025
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+spring.cloud.discovery.enabled: false
