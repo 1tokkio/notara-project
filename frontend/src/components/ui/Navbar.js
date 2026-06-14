@@ -30,9 +30,12 @@ const LEVEL_THRESHOLDS = [0, 100, 300, 700, 1500, 3000];
 function getLevel(xp) { return LEVEL_THRESHOLDS.filter(t => xp >= t).length; }
 
 const navLinks = [
-  { href: '/search',       label: 'Buscar',      match: '/search' },
-  { href: '/dashboard',    label: 'Mi progreso', match: '/dashboard' },
-  { href: '/achievements', label: 'Logros',      match: '/achievements' },
+  { href: '/search',       label: 'Buscar',       match: '/search' },
+  { href: '/dashboard',    label: 'Mi progreso',  match: '/dashboard' },
+  { href: '/vocabulario',  label: 'Vocabulario',  match: '/vocabulario' },
+  { href: '/notas',        label: 'Notas',        match: '/notas' },
+  { href: '/suscripcion',  label: 'Suscripción',  match: '/suscripcion' },
+  { href: '/achievements', label: 'Logros',       match: '/achievements' },
 ];
 
 function getInitials(name = '') {
