@@ -1,0 +1,163 @@
+networks:
+  notara-network:
+    external: true
+
+services:
+  eureka-server:
+    build: ./eureka-server
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+    networks:
+      - notara-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  ms-usuarios:
+    build: ./ms-usuarios
+    container_name: notara-ms-usuarios
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-usuarios:5432/notara-usuarios-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif
+      - JWT_REFRESH_SECRET=fny4fgy34f6u8gy549t9yr87ufh09w3rfy390ftdf4tfue49
+      - SERVER_PORT=8081
+      - EUREKA_URL=http://eureka-server:8761/eureka
+    networks:
+      - notara-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-canciones:
+    build: ./ms-canciones
+    container_name: notara-ms-canciones
+    ports:
+      - "3002:3002"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/linguaflow
+      - REDIS_URL=redis://redis:6379
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - MS_CANCIONES_PORT=3002
+    networks:
+      - notara-network
+    restart: unless-stopped
+
+  ms-notas-metas:
+    build: ./ms-notas-metas
+    container_name: notara-ms-notas-metas
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-notas-metas:5432/notara-notas-metas-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - notara-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-vocabulario:
+    build: ./ms-vocabulario
+    container_name: notara-ms-vocabulario
+    ports:
+      - "8086:8086"
+    environment:
+      - SERVER_PORT=8086
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-vocabulario:5432/notara-vocabulario-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+    networks:
+      - notara-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-pagos-subscripciones:
+    build: ./ms-pagos-subscripciones
+    container_name: notara-ms-pagos-subscripciones
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVER_PORT=8084
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-pagos:5432/notara-pagos-db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+    networks:
+      - notara-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ms-notificaciones:
+    build: ./ms-notificaciones
+    container_name: notara-ms-notificaciones
+    ports:
+      - "8085:8085"
+    environment:
+      - SERVER_PORT=8085
+      - EUREKA_URL=http://eureka-server:8761/eureka
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_FROM=${MAIL_FROM:-noreply@notara.cl}
+    networks:
+      - notara-network
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: notara-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - MS_USUARIOS_URL=http://ms-usuarios:8081
+      - MS_CANCIONES_URL=http://ms-canciones:3002
+      - MS_NOTAS_METAS_URL=http://ms-notas-metas:8083
+      - MS_PAGOS_URL=http://ms-pagos-subscripciones:8084
+      - MS_VOCABULARIO_URL=http://ms-vocabulario:8086
+      - API_GATEWAY_PORT=3000
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/auth/spotify/callback
+    networks:
+      - notara-network
+    depends_on:
+      - ms-usuarios
+      - ms-canciones
+      - ms-notas-metas
+      - ms-pagos-subscripciones
+      - ms-vocabulario
+    restart: unless-stopped
