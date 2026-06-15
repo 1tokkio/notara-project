@@ -1,0 +1,531 @@
+{
+  "info": {
+    "name": "Notara API",
+    "description": "Colección completa de endpoints para el sistema Notara — plataforma de aprendizaje musical con microservicios.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    { "key": "GATEWAY_URL", "value": "http://localhost:3000", "type": "string" },
+    { "key": "MS_USUARIOS_URL", "value": "http://localhost:8081", "type": "string" },
+    { "key": "MS_CANCIONES_URL", "value": "http://localhost:3002", "type": "string" },
+    { "key": "MS_NOTAS_METAS_URL", "value": "http://localhost:8083", "type": "string" },
+    { "key": "MS_PAGOS_URL", "value": "http://localhost:8084", "type": "string" },
+    { "key": "MS_VOCABULARIO_URL", "value": "http://localhost:8086", "type": "string" },
+    { "key": "ACCESS_TOKEN", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "ms-usuarios (8081) — Autenticación y Usuarios",
+      "item": [
+        {
+          "name": "Registrar usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/auth/register", "host": ["{{MS_USUARIOS_URL}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Juan Pérez\",\n  \"email\": \"juan@notara.cl\",\n  \"password\": \"Clave1234!\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 - Usuario registrado",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('ACCESS_TOKEN', json.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/auth/login", "host": ["{{MS_USUARIOS_URL}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"juan@notara.cl\",\n  \"password\": \"Clave1234!\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "200 - Login exitoso",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9...\",\n  \"refreshToken\": \"eyJhbGciOiJIUzI1NiJ9...\"\n}"
+            },
+            {
+              "name": "401 - Credenciales inválidas",
+              "status": "Unauthorized",
+              "code": 401,
+              "body": "{\n  \"error\": \"Credenciales inválidas\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obtener usuario por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/usuarios/1", "host": ["{{MS_USUARIOS_URL}}"], "path": ["usuarios", "1"] }
+          },
+          "response": [
+            {
+              "name": "200 - Usuario encontrado",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"id\": 1,\n  \"nombre\": \"Juan Pérez\",\n  \"email\": \"juan@notara.cl\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Listar todos los usuarios",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/usuarios", "host": ["{{MS_USUARIOS_URL}}"], "path": ["usuarios"] }
+          }
+        },
+        {
+          "name": "Obtener progreso de usuario",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/progress/1", "host": ["{{MS_USUARIOS_URL}}"], "path": ["progress", "1"] }
+          }
+        },
+        {
+          "name": "Guardar progreso de usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_USUARIOS_URL}}/progress/1", "host": ["{{MS_USUARIOS_URL}}"], "path": ["progress", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"leccionCompletada\": \"intro-musica\",\n  \"puntaje\": 85\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-notas-metas (8083) — Notas y Metas",
+      "item": [
+        {
+          "name": "Listar notas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas"] }
+          }
+        },
+        {
+          "name": "Crear nota",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Notas sobre escala mayor\",\n  \"contenido\": \"La escala mayor tiene 7 notas: Do Re Mi Fa Sol La Si\",\n  \"idUsuario\": 1\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 - Nota creada",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"titulo\": \"Notas sobre escala mayor\",\n  \"contenido\": \"La escala mayor tiene 7 notas: Do Re Mi Fa Sol La Si\",\n  \"idUsuario\": 1,\n  \"estado\": \"ACTIVA\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obtener nota por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas", "1"] }
+          }
+        },
+        {
+          "name": "Notas de un usuario",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas/usuario/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas", "usuario", "1"] }
+          }
+        },
+        {
+          "name": "Actualizar nota",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Notas sobre escala mayor - Actualizado\",\n  \"contenido\": \"Contenido actualizado\",\n  \"estado\": \"ARCHIVADA\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar nota",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/notas/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["notas", "1"] }
+          }
+        },
+        {
+          "name": "Listar metas",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/metas", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["metas"] }
+          }
+        },
+        {
+          "name": "Crear meta",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/metas", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["metas"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Aprender acordes básicos\",\n  \"descripcion\": \"Dominar los 4 acordes básicos de guitarra\",\n  \"idUsuario\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Metas de un usuario",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/metas/usuario/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["metas", "usuario", "1"] }
+          }
+        },
+        {
+          "name": "Actualizar meta",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/metas/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["metas", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"Aprender acordes básicos\",\n  \"descripcion\": \"Descripción actualizada\",\n  \"estado\": \"EN_PROGRESO\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Eliminar meta",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_NOTAS_METAS_URL}}/metas/1", "host": ["{{MS_NOTAS_METAS_URL}}"], "path": ["metas", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-pagos-subscripciones (8084) — Suscripciones",
+      "item": [
+        {
+          "name": "Listar suscripciones",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones"] }
+          }
+        },
+        {
+          "name": "Crear suscripción",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": 1,\n  \"nombreUsuario\": \"Juan Pérez\",\n  \"emailUsuario\": \"juan@notara.cl\",\n  \"plan\": \"PREMIUM\"\n}"
+            }
+          },
+          "response": [
+            {
+              "name": "201 - Suscripción creada",
+              "status": "Created",
+              "code": 201,
+              "body": "{\n  \"id\": 1,\n  \"idUsuario\": 1,\n  \"plan\": \"PREMIUM\",\n  \"estado\": \"ACTIVA\",\n  \"fechaInicio\": \"2026-06-14T00:00:00\",\n  \"fechaFin\": \"2026-07-14T00:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Obtener suscripción por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones/1", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones", "1"] }
+          }
+        },
+        {
+          "name": "Suscripción de un usuario",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones/usuario/1", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones", "usuario", "1"] }
+          }
+        },
+        {
+          "name": "Cancelar suscripción",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones/1/cancelar", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones", "1", "cancelar"] }
+          }
+        },
+        {
+          "name": "Renovar suscripción",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+            "url": { "raw": "{{MS_PAGOS_URL}}/suscripciones/1/renovar", "host": ["{{MS_PAGOS_URL}}"], "path": ["suscripciones", "1", "renovar"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "ms-vocabulario (8086) — Vocabulario y Ranking",
+      "item": [
+        {
+          "name": "Palabras",
+          "item": [
+            {
+              "name": "Listar todas las palabras",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras"] }
+              }
+            },
+            {
+              "name": "Resumen por categoría",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras/categorias", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras", "categorias"] }
+              },
+              "response": [
+                {
+                  "name": "200 - Resumen categorías",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"MUSICA\": 25,\n  \"ARTE\": 18,\n  \"CIENCIA\": 12,\n  \"HISTORIA\": 20,\n  \"IDIOMAS\": 15\n}"
+                }
+              ]
+            },
+            {
+              "name": "Palabras por categoría",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras/categoria/MUSICA", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras", "categoria", "MUSICA"] }
+              }
+            },
+            {
+              "name": "Obtener palabra por ID",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras/1", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras", "1"] }
+              }
+            },
+            {
+              "name": "Crear palabra",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"palabra\": \"Sinfonía\",\n  \"definicion\": \"Composición musical para orquesta en varios movimientos\",\n  \"pista\": \"Beethoven compuso 9 de ellas\",\n  \"categoria\": \"MUSICA\",\n  \"dificultad\": \"MEDIA\",\n  \"activa\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Actualizar palabra",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras/1", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras", "1"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"palabra\": \"Sinfonía\",\n  \"definicion\": \"Definición actualizada\",\n  \"pista\": \"Pista actualizada\",\n  \"categoria\": \"MUSICA\",\n  \"dificultad\": \"ALTA\",\n  \"activa\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Eliminar palabra",
+              "request": {
+                "method": "DELETE",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/palabras/1", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "palabras", "1"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Partidas",
+          "item": [
+            {
+              "name": "Iniciar partida",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/partidas", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "partidas"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"idUsuario\": 1,\n  \"nombreUsuario\": \"Juan Pérez\",\n  \"categoria\": \"MUSICA\",\n  \"totalPreguntas\": 10,\n  \"tiempoMaximoSegundos\": 30\n}"
+                }
+              },
+              "response": [
+                {
+                  "name": "200 - Primera pregunta",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"idPartida\": 1,\n  \"numeroPregunta\": 1,\n  \"totalPreguntas\": 10,\n  \"pista\": \"Beethoven compuso 9 de ellas\",\n  \"categoria\": \"MUSICA\",\n  \"tiempoMaximoSegundos\": 30,\n  \"puntuacionActual\": 0\n}"
+                }
+              ]
+            },
+            {
+              "name": "Obtener pregunta actual",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/partidas/1/pregunta", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "partidas", "1", "pregunta"] }
+              }
+            },
+            {
+              "name": "Responder pregunta",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" },
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/partidas/1/responder", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "partidas", "1", "responder"] },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"respuesta\": \"Sinfonía\"\n}"
+                }
+              },
+              "response": [
+                {
+                  "name": "200 - Respuesta correcta",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"esCorrecta\": true,\n  \"puntosObtenidos\": 150,\n  \"gameOver\": false,\n  \"siguientePregunta\": { ... }\n}"
+                },
+                {
+                  "name": "200 - Fin de partida",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "{\n  \"esCorrecta\": true,\n  \"puntosObtenidos\": 100,\n  \"gameOver\": true\n}"
+                }
+              ]
+            },
+            {
+              "name": "Abandonar partida",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/partidas/1/abandonar", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "partidas", "1", "abandonar"] }
+              }
+            },
+            {
+              "name": "Historial de partidas de un usuario",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/partidas/usuario/1", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "partidas", "usuario", "1"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ranking (Redis Cache)",
+          "item": [
+            {
+              "name": "Ranking global (cacheado 5 min)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/ranking", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "ranking"] }
+              },
+              "response": [
+                {
+                  "name": "200 - Top 10 global",
+                  "status": "OK",
+                  "code": 200,
+                  "body": "[\n  {\n    \"id\": 1,\n    \"idUsuario\": 1,\n    \"nombreUsuario\": \"Juan Pérez\",\n    \"categoria\": null,\n    \"puntuacionTotal\": 1500,\n    \"mejorPuntuacion\": 350,\n    \"totalPartidas\": 10,\n    \"totalPalabrasCorrectas\": 78,\n    \"mejorRacha\": 8\n  }\n]"
+                }
+              ]
+            },
+            {
+              "name": "Ranking por categoría (cacheado 5 min)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/ranking/categoria/MUSICA", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "ranking", "categoria", "MUSICA"] }
+              }
+            },
+            {
+              "name": "Estadísticas de usuario (cacheado 10 min)",
+              "request": {
+                "method": "GET",
+                "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }],
+                "url": { "raw": "{{MS_VOCABULARIO_URL}}/vocabulario/ranking/usuario/1", "host": ["{{MS_VOCABULARIO_URL}}"], "path": ["vocabulario", "ranking", "usuario", "1"] }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

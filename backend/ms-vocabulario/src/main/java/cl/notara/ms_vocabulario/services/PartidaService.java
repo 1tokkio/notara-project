@@ -242,6 +242,8 @@ public class PartidaService {
         pregunta.setEsCorrecta(correcta);
         pregunta.setTiempoRespuestaMs(tiempo);
         pregunta.setPuntosObtenidos(puntos);
+        pregunta.setEstado(tiempoAgotado ? EstadoPregunta.TIEMPO_AGOTADO : EstadoPregunta.RESPONDIDA);
+        pregunta.setFechaRespondida(ahora);
 
         preguntaRepo.save(pregunta);
 
@@ -268,6 +270,11 @@ public class PartidaService {
         }
 
 
+        if (partida.getRachaActual() > partida.getMejorRacha()) {
+            partida.setMejorRacha(partida.getRachaActual());
+        }
+
+
         int siguiente =
                 partida.getPreguntaActualIndex() + 1;
 
@@ -279,7 +286,14 @@ public class PartidaService {
                 new RespuestaDTO();
 
         respuesta.setEsCorrecta(correcta);
+        respuesta.setTiempoAgotado(tiempoAgotado);
         respuesta.setPuntosObtenidos(puntos);
+        respuesta.setPuntuacionActual(partida.getPuntuacion());
+        respuesta.setRachaActual(partida.getRachaActual());
+        respuesta.setPalabrasCorrectas(partida.getPalabrasCorrectas());
+        respuesta.setNumeroPregunta(siguiente);
+        respuesta.setTotalPreguntas(partida.getTotalPreguntas());
+        respuesta.setRespuestaCorrecta(respuestaCorrecta);
 
 
         if (siguiente >= partida.getTotalPreguntas()) {
@@ -288,9 +302,12 @@ public class PartidaService {
                     EstadoPartida.FINALIZADA
             );
 
+            partida.setFechaFin(LocalDateTime.now());
+
             rankingService.actualizarRanking(partida);
 
             respuesta.setGameOver(true);
+            respuesta.setResumen(buildResumen(partida));
 
         } else {
 
@@ -346,7 +363,7 @@ public class PartidaService {
         return partidaRepo.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Partida no encontrada"
+                                "Partida no encontrada con id: " + id
                         )
                 );
     }
@@ -408,6 +425,107 @@ public class PartidaService {
 
 
     /**
+     * Mapea una PreguntaPartida a su DTO de respuesta.
+     */
+    private PreguntaDTO mapToPreguntaDTO(
+            PreguntaPartida pregunta,
+            Partida partida
+    ) {
+
+        PreguntaDTO dto = new PreguntaDTO();
+
+        dto.setIdPregunta(pregunta.getId());
+        dto.setIdPartida(partida.getId());
+        dto.setDefinicion(pregunta.getPalabra().getDefinicion());
+        dto.setPista(pregunta.getPalabra().getPista());
+        dto.setCategoria(pregunta.getPalabra().getCategoria());
+        dto.setDificultad(pregunta.getPalabra().getDificultad());
+        dto.setNumeroPregunta(pregunta.getOrden() + 1);
+        dto.setTotalPreguntas(partida.getTotalPreguntas());
+        dto.setPuntuacionActual(partida.getPuntuacion());
+        dto.setRachaActual(partida.getRachaActual());
+        dto.setTiempoMaximoSegundos(partida.getTiempoMaximoSegundos());
+        dto.setFechaEntregada(pregunta.getFechaEntregada());
+
+        return dto;
+    }
+
+
+    /**
+     * Calcula los puntos obtenidos por una respuesta correcta.
+     *
+     * <p>
+     * Aplica puntos base según la dificultad, bonus de velocidad
+     * proporcional al tiempo restante, y bonus de racha a partir de 3.
+     * </p>
+     */
+    private int calcularPuntos(
+            Dificultad dificultad,
+            long tiempo,
+            long limite,
+            int racha
+    ) {
+
+        int base = switch (dificultad) {
+            case FACIL  -> 10;
+            case MEDIO  -> 20;
+            case DIFICIL -> 30;
+        };
+
+        double ratio = 1.0 - ((double) tiempo / limite);
+        int timeBonus = (int) Math.max(0, base * ratio);
+        int puntos = base + timeBonus;
+
+        if (racha >= 3) {
+            puntos = (int) (puntos * 1.5);
+        }
+
+        return puntos;
+    }
+
+
+    /**
+     * Construye el resumen final de una partida terminada.
+     */
+    private PartidaResumenDTO buildResumen(Partida partida) {
+
+        PartidaResumenDTO resumen = new PartidaResumenDTO();
+
+        resumen.setIdPartida(partida.getId());
+        resumen.setIdUsuario(partida.getIdUsuario());
+        resumen.setNombreUsuario(partida.getNombreUsuario());
+        resumen.setCategoria(partida.getCategoria());
+        resumen.setPuntuacionFinal(partida.getPuntuacion());
+        resumen.setPalabrasCorrectas(partida.getPalabrasCorrectas());
+        resumen.setTotalPreguntas(partida.getTotalPreguntas());
+        resumen.setMejorRacha(partida.getMejorRacha());
+
+        double precision = partida.getTotalPreguntas() > 0
+                ? (double) partida.getPalabrasCorrectas()
+                        / partida.getTotalPreguntas() * 100
+                : 0;
+
+        resumen.setPrecision(precision);
+        resumen.setCalificacion(calcularCalificacion(precision));
+
+        return resumen;
+    }
+
+
+    /**
+     * Determina la calificación textual según la precisión obtenida.
+     */
+    private String calcularCalificacion(double precision) {
+
+        if (precision >= 90) return "Excelente 🏆";
+        if (precision >= 70) return "Muy bien 🌟";
+        if (precision >= 50) return "Bien 👍";
+
+        return "Sigue practicando 💪";
+    }
+
+
+    /**
      * Verifica que una partida se encuentre activa.
      */
     private Partida obtenerPartidaActiva(
@@ -422,7 +540,7 @@ public class PartidaService {
                 != EstadoPartida.EN_CURSO) {
 
             throw new IllegalStateException(
-                    "La partida no está activa"
+                    "La partida no está en curso"
             );
         }
 
