@@ -1,0 +1,15 @@
+networks:
+  notara-network:
+    external: true
+
+services:
+  frontend:
+    build: .
+    container_name: notara-frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3000
+    networks:
+      - notara-network
+    restart: unless-stopped

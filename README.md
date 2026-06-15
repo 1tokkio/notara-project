@@ -7,30 +7,72 @@ Plataforma web para aprender inglés a través de canciones. El usuario busca un
 ## Arquitectura
 
 ```
-┌─────────────────┐
-│    Frontend      │  Next.js 14 — :3001
-└────────┬────────┘
-         │ HTTP
-┌────────▼────────┐
-│   API Gateway   │  Node.js / Express — :3000
-└────────┬────────┘
-         │ proxy
-    ┌────┴──────────────────┐
-    │                       │
-┌───▼──────────┐   ┌───────▼──────────┐
-│ ms-usuarios  │   │  ms-canciones    │
-│ Spring Boot  │   │  Node.js/Fastify │
-│ Auth + JWT   │   │  Spotify + LRC   │
-│    :8081     │   │     :3002        │
-└───┬──────────┘   └───────┬──────────┘
-    │                      │
-┌───▼──────┐   ┌───────────▼┐   ┌────────┐
-│PostgreSQL│   │  MongoDB   │   │ Redis  │
-│ :5432    │   │  :27017    │   │ :6379  │
-└──────────┘   └────────────┘   └────────┘
+┌──────────────────────────────────────────────────────┐
+│                     Frontend                          │
+│              Next.js 14  —  :3001                    │
+└───────────────────────┬──────────────────────────────┘
+                        │ HTTP
+┌───────────────────────▼──────────────────────────────┐
+│                   API Gateway                         │
+│              Node.js / Express  —  :3000             │
+└──┬──────────┬────────┬──────────┬──────────┬─────────┘
+   │          │        │          │          │
+┌──▼───┐  ┌──▼───┐  ┌─▼────┐  ┌─▼────┐  ┌──▼────┐
+│ ms-  │  │ ms-  │  │ ms-  │  │ ms-  │  │  ms-  │
+│usua- │  │can-  │  │notas-│  │vocab-│  │ pagos │
+│rios  │  │ciones│  │metas │  │ulario│  │ subs  │
+│:8081 │  │:3002 │  │:8083 │  │:8086 │  │ :8084 │
+└──┬───┘  └──┬───┘  └──┬───┘  └──┬───┘  └───┬───┘
+   │         │          │         │           │
+┌──▼──┐   ┌──▼──┐   ┌──▼──┐   ┌──▼──┐       │    ┌─────────────┐
+│ PG  │   │Mongo│   │ PG  │   │ PG  │       │    │ms-notifica- │
+│5432 │   │27017│   │5433 │   │5435 │       │    │ciones :8085 │
+└─────┘   └─────┘   └─────┘   └─────┘       │    └──────┬──────┘
+                                             │           │
+                                          ┌──▼───────────▼──┐
+                                          │    RabbitMQ      │
+                                          │     :5672        │
+                                          └─────────────────┘
 
-Eureka Server (descubrimiento de servicios) — :8761
-ms-notas-metas (Spring Boot) — :8083
+Redis :6379  (caché — ms-usuarios, ms-canciones)
+Eureka Server :8761  (descubrimiento de servicios)
+```
+
+---
+
+## Estructura del repositorio
+
+```
+notara-project/
+├── frontend/                     # App Next.js — interfaz de usuario
+│   ├── src/
+│   │   ├── app/                  # Rutas Next.js App Router
+│   │   ├── components/           # Componentes React
+│   │   ├── context/              # Estado global (AuthContext)
+│   │   ├── lib/                  # API client, utilidades
+│   │   └── patterns/             # Patrones de diseño
+│   └── docker-compose.yml
+│
+├── backend/                      # Todos los microservicios
+│   ├── api-gateway/              # Express — enruta /auth, /songs, /ia, /progress
+│   ├── eureka-server/            # Servidor de descubrimiento Netflix Eureka
+│   ├── ms-usuarios/              # Spring Boot — autenticación, JWT, usuarios
+│   ├── ms-canciones/             # Node.js/Fastify — Spotify, letras, lecciones
+│   ├── ms-notas-metas/           # Spring Boot — notas y metas del usuario
+│   ├── ms-vocabulario/           # Spring Boot — juego de vocabulario y ranking
+│   ├── ms-pagos-subscripciones/  # Spring Boot — suscripciones + RabbitMQ publisher
+│   ├── ms-notificaciones/        # Spring Boot — emails + RabbitMQ consumer
+│   └── docker-compose.yml
+│
+├── data/                         # Configuración de bases de datos
+│   ├── postgres/                 # Scripts de inicialización PostgreSQL
+│   ├── mongodb/                  # Scripts de inicialización MongoDB
+│   ├── redis/                    # Configuración Redis
+│   ├── rabbitmq/                 # Configuración RabbitMQ
+│   └── docker-compose.yml
+│
+├── docker-compose.yml            # Orquestación completa (alternativa)
+└── .env                          # Variables de entorno (no subir al repo)
 ```
 
 ---
@@ -41,24 +83,25 @@ ms-notas-metas (Spring Boot) — :8083
 
 | Patrón | Archivo | Descripción |
 |--------|---------|-------------|
-| **Factory Method** | `ms-canciones/src/patterns/LessonFactory.js` | Crea el tipo de lección (`vocabulary`, `grammar`, `pronunciation`) según el género musical de la canción, sin que la ruta conozca los detalles de construcción. |
-| **Circuit Breaker** | `ms-canciones/src/patterns/CircuitBreaker.js` | Protege las llamadas a Spotify y LRCLib: si acumulan fallos consecutivos, el circuito se abre y devuelve error inmediato en vez de esperar timeouts. |
-| **Repository** | `ms-canciones/src/repositories/SongRepository.js` | Abstrae el acceso a MongoDB. Las rutas usan métodos de dominio (`findById`, `upsert`) sin conocer Mongoose ni las queries. |
+| **Factory Method** | `backend/ms-canciones/src/patterns/LessonFactory.js` | Crea el tipo de lección (`vocabulary`, `grammar`, `pronunciation`) según el género musical de la canción. |
+| **Circuit Breaker** | `backend/ms-canciones/src/patterns/CircuitBreaker.js` | Protege las llamadas a Spotify y LRCLib: si acumulan fallos, el circuito se abre y devuelve error inmediato. |
+| **Repository** | `backend/ms-canciones/src/repositories/SongRepository.js` | Abstrae el acceso a MongoDB con métodos de dominio (`findById`, `upsert`). |
 
 ### Frontend — Next.js
 
 | Patrón | Archivo | Descripción |
 |--------|---------|-------------|
-| **Strategy** | `frontend/src/patterns/LyricsDisplayStrategy.js` | Cuatro modos de visualización de letra (solo EN, solo ES, bilingüe, sincronizada), cada uno encapsulado en una estrategia intercambiable con interfaz `{ id, label, render(props) }`. |
-| **Observer / Context** | `frontend/src/context/AuthContext.js` | Estado de autenticación global. Los componentes se suscriben con `useAuth()` y se re-renderizan automáticamente ante cambios sin necesidad de prop drilling. |
-| **Facade** | `frontend/src/lib/api.js` | Centraliza todas las llamadas HTTP al backend: maneja el token JWT, el refresh automático y la redirección en caso de sesión expirada. |
+| **Strategy** | `frontend/src/patterns/LyricsDisplayStrategy.js` | Cuatro modos de visualización de letra (solo EN, solo ES, bilingüe, sincronizada), cada uno como estrategia intercambiable. |
+| **Observer / Context** | `frontend/src/context/AuthContext.js` | Estado de autenticación global. Componentes se suscriben con `useAuth()` sin prop drilling. |
+| **Facade** | `frontend/src/lib/api.js` | Centraliza todas las llamadas HTTP: maneja JWT, refresh automático y redirección por sesión expirada. |
 
 ### Arquitectura
 
 | Patrón | Ubicación | Descripción |
 |--------|-----------|-------------|
-| **API Gateway** | `api-gateway/` | Punto de entrada único. Centraliza enrutamiento, autenticación y CORS. El frontend no conoce las URLs internas de los microservicios. |
-| **BFF (Backend for Frontend)** | `bff/` | Orquesta llamadas a múltiples servicios para las respuestas de IA, adaptando el formato al cliente. |
+| **API Gateway** | `backend/api-gateway/` | Punto de entrada único. Centraliza enrutamiento, autenticación y CORS. |
+| **Microservicios** | `backend/ms-*/` | Cada dominio de negocio como servicio independiente con su propia base de datos. |
+| **Publish/Subscribe** | RabbitMQ | `ms-pagos-subscripciones` publica eventos; `ms-notificaciones` los consume para enviar emails. |
 
 ---
 
@@ -66,79 +109,99 @@ ms-notas-metas (Spring Boot) — :8083
 
 | Capa | Tecnología |
 |------|------------|
-| Frontend | Next.js 14, React, Tailwind CSS |
-| API Gateway | Node.js, Express |
-| ms-canciones | Node.js, Fastify, Mongoose, Redis |
-| ms-usuarios | Java 17, Spring Boot 3, Spring Security, JJWT |
-| ms-notas-metas | Java 17, Spring Boot 3 |
-| Bases de datos | MongoDB (canciones), PostgreSQL x2 (usuarios, notas) |
-| Caché | Redis 7 |
+| Frontend | Next.js 14, React 18, Tailwind CSS 4 |
+| API Gateway | Node.js, Express 4 |
+| ms-canciones | Node.js, Fastify 4, Mongoose 8, Redis 4 |
+| ms-usuarios | Java 17, Spring Boot 3.3, Spring Security, JJWT |
+| ms-notas-metas | Java 17, Spring Boot 3.3, OpenFeign |
+| ms-vocabulario | Java 17, Spring Boot 3.3, JPA |
+| ms-pagos-subscripciones | Java 17, Spring Boot 3.3, AMQP |
+| ms-notificaciones | Java 17, Spring Boot 3.3, Spring Mail, AMQP |
+| Bases de datos | PostgreSQL 16 ×4, MongoDB 7, Redis 7 |
+| Mensajería | RabbitMQ 3.13 |
 | Descubrimiento | Netflix Eureka |
 | IA | Anthropic Claude (Haiku) |
 | Audio | Spotify Web API, Spotify Web Playback SDK |
 | Letras | LRCLib (letras sincronizadas) |
+| Cobertura | JaCoCo (Java, mínimo 85%), Jest (Node.js/React) |
 
 ---
 
 ## Requisitos previos
 
-- [Docker](https://www.docker.com/get-started) y Docker Compose (recomendado)
+- [Docker](https://www.docker.com/get-started) y Docker Compose
 - O bien: Node.js 20+ y Java 17+ para correr sin Docker
 - Credenciales de [Spotify Developer](https://developer.spotify.com/dashboard)
-- API Key de [Anthropic](https://console.anthropic.com) (para las funciones de IA)
+- API Key de [Anthropic](https://console.anthropic.com)
 
 ---
 
 ## Configuración
 
-Crear un archivo `.env` en la raíz del proyecto (`notara-project/.env`):
+Crear un archivo `.env` en la raíz del proyecto:
 
 ```env
 SPOTIFY_CLIENT_ID=tu_spotify_client_id
 SPOTIFY_CLIENT_SECRET=tu_spotify_client_secret
 ANTHROPIC_API_KEY=tu_anthropic_api_key
+MAIL_USERNAME=tu_email@gmail.com
+MAIL_PASSWORD=tu_app_password
+MAIL_FROM=noreply@notara.cl
 ```
 
-> Los secrets de JWT ya están configurados en el `docker-compose.yml` con valores por defecto para desarrollo. Cambiarlos en producción.
+> Los secrets de JWT están en los `docker-compose.yml` con valores por defecto para desarrollo. Cambiarlos en producción.
 
 ---
 
-## Ejecución con Docker (recomendado)
+## Ejecución con Docker
 
-### Primera vez
+El proyecto tiene tres `docker-compose.yml` independientes. **Deben levantarse en este orden:**
+
+### 1. Bases de datos (crea la red compartida `notara-network`)
 
 ```bash
-# Clonar el repositorio
-git clone https://github.com/1tokkio/notara-project.git
-cd notara-project
-
-# Crear el archivo de variables de entorno
-cp .env.example .env   # o crear .env manualmente con las variables de arriba
-
-# Construir imágenes y levantar todos los servicios
-docker-compose up --build
+cd data
+docker compose up -d --build
 ```
 
-El primer build tarda ~5-10 minutos (Spring Boot compila Java).
-
-### Ejecuciones siguientes
+### 2. Backend (microservicios)
 
 ```bash
-docker-compose up
+cd backend
+docker compose up -d --build
 ```
 
-### Detener los servicios
+### 3. Frontend
 
 ```bash
-docker-compose down
+cd frontend
+docker compose up -d --build
 ```
 
-### Ver logs de un servicio específico
+> El primer build tarda ~5-10 minutos (Spring Boot compila Java).
+
+### Alternativa: levantar todo desde la raíz
 
 ```bash
-docker-compose logs -f api-gateway
-docker-compose logs -f ms-canciones
-docker-compose logs -f ms-usuarios
+docker compose up -d --build
+```
+
+### Detener servicios
+
+```bash
+# Desde cada carpeta:
+docker compose down
+
+# O desde la raíz:
+docker compose down
+```
+
+### Ver logs de un servicio
+
+```bash
+docker compose logs -f api-gateway
+docker compose logs -f ms-canciones
+docker compose logs -f ms-usuarios
 ```
 
 ---
@@ -146,30 +209,34 @@ docker-compose logs -f ms-usuarios
 ## URLs tras el arranque
 
 | Servicio | URL |
-|---------|-----|
+|----------|-----|
 | **Frontend** | http://localhost:3001 |
 | **API Gateway** | http://localhost:3000 |
 | ms-canciones | http://localhost:3002 |
 | ms-usuarios | http://localhost:8081 |
 | ms-notas-metas | http://localhost:8083 |
+| ms-pagos-subscripciones | http://localhost:8084 |
+| ms-notificaciones | http://localhost:8085 |
+| ms-vocabulario | http://localhost:8086 |
 | Eureka Dashboard | http://localhost:8761 |
+| RabbitMQ Management | http://localhost:15672 (guest / guest) |
 
 ---
 
 ## Ejecución en desarrollo (sin Docker)
 
-Requiere tener MongoDB, PostgreSQL y Redis corriendo localmente o vía Docker.
+Requiere MongoDB, PostgreSQL ×4, Redis y RabbitMQ corriendo localmente.
 
 **ms-canciones**
 ```bash
-cd ms-canciones
+cd backend/ms-canciones
 npm install
-npm run dev        # nodemon, recarga automática
+npm run dev
 ```
 
 **api-gateway**
 ```bash
-cd api-gateway
+cd backend/api-gateway
 npm install
 npm run dev
 ```
@@ -178,32 +245,29 @@ npm run dev
 ```bash
 cd frontend
 npm install
-npm run dev        # http://localhost:3000 (dev) o 3001 (build)
+npm run dev
 ```
 
-**ms-usuarios / ms-notas-metas / eureka-server**
+**Servicios Java (Spring Boot)**
 ```bash
-cd ms-usuarios     # o ms-notas-metas, eureka-server
+cd backend/eureka-server
+mvn spring-boot:run
+
+cd backend/ms-usuarios
+mvn spring-boot:run
+
+cd backend/ms-notas-metas
+mvn spring-boot:run
+
+cd backend/ms-vocabulario
+mvn spring-boot:run
+
+cd backend/ms-pagos-subscripciones
+mvn spring-boot:run
+
+cd backend/ms-notificaciones
 mvn spring-boot:run
 ```
-
----
-
-## Demo presencial con ngrok
-
-Para exponer el backend local y acceder desde otros dispositivos:
-
-```bash
-# 1. Levantar todos los servicios
-docker-compose up -d
-
-# 2. Abrir túnel al API Gateway (en otra terminal)
-ngrok http 3000
-```
-
-Copiar la URL que muestra ngrok (ej. `https://abc123.ngrok-free.app`) y usarla como valor de `NEXT_PUBLIC_API_URL` en el frontend o en Vercel.
-
-> ngrok requiere una cuenta gratuita en ngrok.com para obtener el authtoken: `ngrok config add-authtoken <token>`
 
 ---
 
@@ -223,7 +287,7 @@ Copiar la URL que muestra ngrok (ej. `https://abc123.ngrok-free.app`) y usarla c
 |--------|------|-------------|
 | GET | `/songs/search?q=query&limit=10` | Búsqueda en Spotify |
 | GET | `/songs/:id` | Metadatos de una canción |
-| GET | `/songs/:id/lyrics` | Letra (sincronizada LRC si existe) |
+| GET | `/songs/:id/lyrics` | Letra sincronizada (LRC) |
 | GET | `/songs/:id/lesson-type` | Tipo de lección según género musical |
 
 ### IA (requiere autenticación)
@@ -244,34 +308,35 @@ Copiar la URL que muestra ngrok (ej. `https://abc123.ngrok-free.app`) y usarla c
 
 ## Tests
 
+### Frontend (Jest + Testing Library)
+```bash
+cd frontend
+npm test                  # todos los tests
+npm run test:coverage     # con reporte de cobertura (mínimo 85%)
+```
+
 ### ms-canciones (Jest)
 ```bash
-cd ms-canciones
-
+cd backend/ms-canciones
 npm test                  # todos los tests con cobertura
 npm run test:unit         # solo unitarios (CircuitBreaker, LessonFactory)
 npm run test:integration  # solo integración (rutas HTTP)
 ```
 
-### ms-usuarios (JUnit 5 + Mockito)
+### Microservicios Java (JUnit 5 + Mockito — cobertura mínima 85%)
 ```bash
-cd ms-usuarios
+cd backend/ms-usuarios
 mvn test
-```
 
----
+cd backend/ms-notas-metas
+mvn test
 
-## Estructura del repositorio
+cd backend/ms-vocabulario
+mvn test
 
-```
-notara-project/
-├── api-gateway/          # Gateway Express — enruta /auth, /songs, /ia, /progress
-├── frontend/             # App Next.js — interfaz de usuario
-├── ms-canciones/         # Node.js/Fastify — Spotify, letras, tipo de lección
-├── ms-usuarios/          # Spring Boot — autenticación, JWT, usuarios
-├── ms-notas-metas/       # Spring Boot — notas y metas del usuario
-├── bff/                  # Backend for Frontend — orquestación de IA
-├── eureka-server/        # Servidor de descubrimiento de servicios
-├── docker-compose.yml    # Orquestación completa del sistema
-└── .env                  # Variables de entorno (no subir al repo)
+cd backend/ms-pagos-subscripciones
+mvn test
+
+cd backend/ms-notificaciones
+mvn test
 ```
