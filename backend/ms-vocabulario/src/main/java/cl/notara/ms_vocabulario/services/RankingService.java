@@ -3,6 +3,9 @@ package cl.notara.ms_vocabulario.services;
 import cl.notara.ms_vocabulario.models.Partida;
 import cl.notara.ms_vocabulario.models.Ranking;
 import cl.notara.ms_vocabulario.repositories.RankingRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +62,11 @@ public class RankingService {
      *
      * @param partida partida finalizada con los resultados obtenidos
      */
+    @Caching(evict = {
+            @CacheEvict(value = "ranking-global", allEntries = true),
+            @CacheEvict(value = "ranking-categoria", allEntries = true),
+            @CacheEvict(value = "estadisticas-usuario", key = "#partida.idUsuario")
+    })
     @Transactional
     public void actualizarRanking(Partida partida) {
 
@@ -175,6 +183,7 @@ public class RankingService {
      *
      * @return lista ordenada de rankings globales
      */
+    @Cacheable(value = "ranking-global")
     public List<Ranking> rankingGlobal() {
 
         return rankingRepo
@@ -188,6 +197,7 @@ public class RankingService {
      * @param categoria categoría utilizada como filtro
      * @return lista de mejores usuarios dentro de la categoría
      */
+    @Cacheable(value = "ranking-categoria", key = "#categoria.name()")
     public List<Ranking> rankingPorCategoria(
             cl.notara.ms_vocabulario.models.Categoria categoria
     ) {
@@ -205,6 +215,7 @@ public class RankingService {
      * @param idUsuario identificador del usuario
      * @return lista de rankings asociados al usuario
      */
+    @Cacheable(value = "estadisticas-usuario", key = "#idUsuario")
     public List<Ranking> estadisticasUsuario(
             Long idUsuario
     ) {
