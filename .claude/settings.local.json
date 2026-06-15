@@ -2,7 +2,19 @@
   "permissions": {
     "allow": [
       "Bash(npm install *)",
-      "Bash(docker-compose up *)"
+      "Bash(docker-compose up *)",
+      "PowerShell(Get-Command mvn -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command mvnw -ErrorAction SilentlyContinue)",
+      "PowerShell($env:MAVEN_HOME)",
+      "PowerShell($env:M2_HOME)",
+      "PowerShell($userPath = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"User\"\\); $machinePath = [System.Environment]::GetEnvironmentVariable\\(\"PATH\",\"Machine\"\\); \\($userPath + \";\" + $machinePath\\) -split \";\" | Where-Object { $_ -ne \"\" } | ForEach-Object { if \\(Test-Path \"$_\\\\mvn.cmd\"\\) { Write-Output \"$_ => mvn.cmd FOUND\" } })",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn test jacoco:check -q 2>&1)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn test 2>&1 | Select-String -Pattern \"ERROR|FAILED|Tests run|BUILD|ModuleMember|Caused by|Exception\" | Select-Object -First 40)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn surefire:test 2>&1 | Select-String -Pattern \"Tests run|ERROR|FAILED|BUILD\" | Select-Object -First 20)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn test jacoco:check 2>&1 | Select-String -Pattern \"Tests run|ERROR|FAILED|BUILD|coverage checks|INSTRUCTIONS\" | Select-Object -First 30)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn verify 2>&1 | Select-String -Pattern \"Tests run|ERROR|FAILED|BUILD|coverage checks|INSTRUCTIONS|coverage\" | Select-Object -First 30)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn verify 2>&1 | Select-String -Pattern \"BUILD|coverage checks|All coverage|Rule violated|INSTRUCTION\" | Select-Object -First 20)",
+      "PowerShell($mvn = \"C:\\\\Users\\\\eliec\\\\.m2\\\\wrapper\\\\dists\\\\apache-maven-3.9.11\\\\03d7e36a140982eea48e22c1dcac01d8862b2550b2939e09a0809bbc5182a5bc\\\\bin\\\\mvn.cmd\"; Set-Location \"c:\\\\Users\\\\eliec\\\\OneDrive\\\\Desktop\\\\Eliecer\\\\Duoc\\\\Semestre V\\\\FullStack III\\\\notara-project\\\\ms-notificaciones\"; & $mvn verify 2>&1 | Select-String -Pattern \"Tests run:|coverage checks|BUILD|INSTRUCTION|BRANCH|Checking\" | Select-Object -First 20)"
     ]
   }
 }

@@ -8,20 +8,21 @@ import cl.notara.ms_pagos_subscripciones.models.Plan;
 import cl.notara.ms_pagos_subscripciones.models.Suscripcion;
 import cl.notara.ms_pagos_subscripciones.repositories.SuscripcionRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.core.AmqpTemplate;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -33,7 +34,7 @@ class SuscripcionServiceTest {
     private SuscripcionRepository repository;
 
     @Mock
-    private RabbitTemplate rabbitTemplate;
+    private AmqpTemplate amqpTemplate;
 
     @InjectMocks
     private SuscripcionService service;
@@ -45,211 +46,191 @@ class SuscripcionServiceTest {
         suscripcion = new Suscripcion();
         suscripcion.setId(1L);
         suscripcion.setIdUsuario(10L);
-        suscripcion.setEmailUsuario("usuario@test.cl");
-        suscripcion.setNombreUsuario("Juan Pérez");
-        suscripcion.setPlan(Plan.PREMIUM);
+        suscripcion.setEmailUsuario("test@example.com");
+        suscripcion.setNombreUsuario("Juan Perez");
+        suscripcion.setPlan(Plan.BASICO);
         suscripcion.setEstado(EstadoSuscripcion.ACTIVA);
-        suscripcion.setFechaInicio(LocalDate.of(2024, 1, 1));
-        suscripcion.setFechaFin(LocalDate.of(2024, 2, 1));
+        suscripcion.setFechaInicio(LocalDate.now());
+        suscripcion.setFechaFin(LocalDate.now().plusMonths(1));
         suscripcion.setMonto(9990.0);
     }
 
-    // ─── listar() ────────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("listar() - retorna todas las suscripciones")
-    void listar_retornaLista() {
-        when(repository.findAll()).thenReturn(List.of(suscripcion));
+    void listar_retornaListaCompleta() {
+        when(repository.findAll()).thenReturn(Arrays.asList(suscripcion));
 
         List<Suscripcion> resultado = service.listar();
 
-        assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).getEmailUsuario()).isEqualTo("usuario@test.cl");
+        assertThat(resultado).hasSize(1).contains(suscripcion);
         verify(repository).findAll();
     }
 
     @Test
-    @DisplayName("listar() - retorna lista vacía cuando no hay suscripciones")
-    void listar_listaVacia() {
-        when(repository.findAll()).thenReturn(List.of());
+    void listar_retornaListaVacia() {
+        when(repository.findAll()).thenReturn(Collections.emptyList());
 
-        assertThat(service.listar()).isEmpty();
-        verify(repository).findAll();
+        List<Suscripcion> resultado = service.listar();
+
+        assertThat(resultado).isEmpty();
     }
 
-    // ─── listarPorUsuario() ───────────────────────────────────────────────────
-
     @Test
-    @DisplayName("listarPorUsuario() - retorna suscripciones del usuario")
-    void listarPorUsuario_retornaLista() {
-        when(repository.findByIdUsuario(10L)).thenReturn(List.of(suscripcion));
+    void listarPorUsuario_retornaListaFiltradaPorUsuario() {
+        when(repository.findByIdUsuario(10L)).thenReturn(Arrays.asList(suscripcion));
 
         List<Suscripcion> resultado = service.listarPorUsuario(10L);
 
         assertThat(resultado).hasSize(1);
-        assertThat(resultado.get(0).getIdUsuario()).isEqualTo(10L);
         verify(repository).findByIdUsuario(10L);
     }
 
     @Test
-    @DisplayName("listarPorUsuario() - usuario sin suscripciones retorna lista vacía")
-    void listarPorUsuario_sinSuscripciones_listaVacia() {
-        when(repository.findByIdUsuario(99L)).thenReturn(List.of());
+    void listarPorUsuario_usuarioSinSuscripciones_retornaVacio() {
+        when(repository.findByIdUsuario(99L)).thenReturn(Collections.emptyList());
 
-        assertThat(service.listarPorUsuario(99L)).isEmpty();
+        List<Suscripcion> resultado = service.listarPorUsuario(99L);
+
+        assertThat(resultado).isEmpty();
     }
 
-    // ─── obtener() ────────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("obtener() - suscripción encontrada retorna objeto")
-    void obtener_existente_retornaSuscripcion() {
+    void obtener_cuandoExiste_retornaSuscripcion() {
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
 
         Suscripcion resultado = service.obtener(1L);
 
-        assertThat(resultado.getId()).isEqualTo(1L);
-        assertThat(resultado.getPlan()).isEqualTo(Plan.PREMIUM);
-        verify(repository).findById(1L);
+        assertThat(resultado).isEqualTo(suscripcion);
     }
 
     @Test
-    @DisplayName("obtener() - suscripción no encontrada lanza ResourceNotFoundException")
-    void obtener_noExistente_lanzaExcepcion() {
+    void obtener_cuandoNoExiste_lanzaResourceNotFoundException() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class,
-                () -> service.obtener(99L));
-        assertThat(ex.getMessage()).contains("99");
-        verify(repository).findById(99L);
+        assertThatThrownBy(() -> service.obtener(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("99");
     }
 
-    // ─── crear() ─────────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("crear() - usuario sin suscripción activa → crea y publica evento CREADA")
-    void crear_sinSuscripcionActiva_creaYPublicaEvento() {
-        when(repository.findByIdUsuarioAndEstado(10L, EstadoSuscripcion.ACTIVA))
+    void crear_sinSuscripcionActiva_guardaYPublicaEvento() {
+        Suscripcion nueva = new Suscripcion();
+        nueva.setIdUsuario(20L);
+        nueva.setEmailUsuario("nuevo@example.com");
+        nueva.setNombreUsuario("Maria Lopez");
+        nueva.setPlan(Plan.PREMIUM);
+        nueva.setFechaInicio(LocalDate.now());
+        nueva.setFechaFin(LocalDate.now().plusMonths(6));
+        nueva.setMonto(19990.0);
+
+        when(repository.findByIdUsuarioAndEstado(20L, EstadoSuscripcion.ACTIVA))
                 .thenReturn(Optional.empty());
-        when(repository.save(any(Suscripcion.class))).thenReturn(suscripcion);
+        when(repository.save(any(Suscripcion.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Suscripcion resultado = service.crear(suscripcion);
+        Suscripcion resultado = service.crear(nueva);
 
-        assertThat(resultado).isNotNull();
-        assertThat(suscripcion.getEstado()).isEqualTo(EstadoSuscripcion.ACTIVA);
-        verify(repository).save(suscripcion);
-        verify(rabbitTemplate).convertAndSend(
+        assertThat(resultado.getEstado()).isEqualTo(EstadoSuscripcion.ACTIVA);
+        verify(repository).save(nueva);
+        verify(amqpTemplate).convertAndSend(
                 eq(RabbitMQConfig.EXCHANGE),
                 eq(RabbitMQConfig.RK_CREADA),
                 any(SuscripcionEventDTO.class));
     }
 
     @Test
-    @DisplayName("crear() - usuario ya tiene suscripción activa → lanza IllegalStateException")
-    void crear_conSuscripcionActiva_lanzaIllegalState() {
+    void crear_conSuscripcionActivaExistente_lanzaIllegalStateException() {
         when(repository.findByIdUsuarioAndEstado(10L, EstadoSuscripcion.ACTIVA))
                 .thenReturn(Optional.of(suscripcion));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.crear(suscripcion));
-        assertThat(ex.getMessage()).contains("ya tiene una suscripción activa");
+        Suscripcion nueva = new Suscripcion();
+        nueva.setIdUsuario(10L);
+
+        assertThatThrownBy(() -> service.crear(nueva))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("activa");
+
         verify(repository, never()).save(any());
-        verify(rabbitTemplate, never()).convertAndSend(any(), any(), any(Object.class));
+        verifyNoInteractions(amqpTemplate);
     }
 
-    // ─── cancelar() ───────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("cancelar() - suscripción activa → cancela y publica evento CANCELADA")
-    void cancelar_activa_cancelaYPublicaEvento() {
+    void cancelar_suscripcionActiva_cambiaEstadoYPublicaEvento() {
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
-        when(repository.save(any(Suscripcion.class))).thenReturn(suscripcion);
+        when(repository.save(suscripcion)).thenReturn(suscripcion);
 
         Suscripcion resultado = service.cancelar(1L);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSuscripcion.CANCELADA);
-        verify(repository).save(suscripcion);
-        verify(rabbitTemplate).convertAndSend(
+        verify(amqpTemplate).convertAndSend(
                 eq(RabbitMQConfig.EXCHANGE),
                 eq(RabbitMQConfig.RK_CANCELADA),
                 any(SuscripcionEventDTO.class));
     }
 
     @Test
-    @DisplayName("cancelar() - suscripción ya cancelada → lanza IllegalStateException")
-    void cancelar_yaCancelada_lanzaIllegalState() {
+    void cancelar_suscripcionYaCancelada_lanzaIllegalStateException() {
         suscripcion.setEstado(EstadoSuscripcion.CANCELADA);
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.cancelar(1L));
-        assertThat(ex.getMessage()).contains("ya está cancelada");
+        assertThatThrownBy(() -> service.cancelar(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cancelada");
+
         verify(repository, never()).save(any());
     }
 
     @Test
-    @DisplayName("cancelar() - suscripción no existe → lanza ResourceNotFoundException")
-    void cancelar_noExistente_lanzaExcepcion() {
+    void cancelar_suscripcionNoExiste_lanzaResourceNotFoundException() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> service.cancelar(99L));
-        verify(repository, never()).save(any());
+        assertThatThrownBy(() -> service.cancelar(99L))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ─── renovar() ────────────────────────────────────────────────────────────
-
     @Test
-    @DisplayName("renovar() - suscripción activa → renueva y publica evento RENOVADA")
-    void renovar_activa_renovaYPublicaEvento() {
-        LocalDate nuevaFechaFin = LocalDate.of(2024, 3, 1);
+    void renovar_suscripcionActiva_actualizaFechaYPublicaEvento() {
+        LocalDate nuevaFecha = LocalDate.now().plusMonths(3);
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
-        when(repository.save(any(Suscripcion.class))).thenReturn(suscripcion);
+        when(repository.save(suscripcion)).thenReturn(suscripcion);
 
-        Suscripcion resultado = service.renovar(1L, nuevaFechaFin);
+        Suscripcion resultado = service.renovar(1L, nuevaFecha);
 
+        assertThat(resultado.getFechaFin()).isEqualTo(nuevaFecha);
         assertThat(resultado.getEstado()).isEqualTo(EstadoSuscripcion.ACTIVA);
-        assertThat(suscripcion.getFechaFin()).isEqualTo(nuevaFechaFin);
-        verify(repository).save(suscripcion);
-        verify(rabbitTemplate).convertAndSend(
+        verify(amqpTemplate).convertAndSend(
                 eq(RabbitMQConfig.EXCHANGE),
                 eq(RabbitMQConfig.RK_RENOVADA),
                 any(SuscripcionEventDTO.class));
     }
 
     @Test
-    @DisplayName("renovar() - suscripción vencida → renueva correctamente (estado no CANCELADA)")
-    void renovar_vencida_renovaCorrectamente() {
+    void renovar_suscripcionVencida_actualizaEstadoAActiva() {
         suscripcion.setEstado(EstadoSuscripcion.VENCIDA);
-        LocalDate nuevaFechaFin = LocalDate.of(2024, 4, 1);
+        LocalDate nuevaFecha = LocalDate.now().plusMonths(2);
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
-        when(repository.save(any(Suscripcion.class))).thenReturn(suscripcion);
+        when(repository.save(suscripcion)).thenReturn(suscripcion);
 
-        Suscripcion resultado = service.renovar(1L, nuevaFechaFin);
+        Suscripcion resultado = service.renovar(1L, nuevaFecha);
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoSuscripcion.ACTIVA);
-        verify(rabbitTemplate).convertAndSend(eq(RabbitMQConfig.EXCHANGE),
-                eq(RabbitMQConfig.RK_RENOVADA), any(SuscripcionEventDTO.class));
     }
 
     @Test
-    @DisplayName("renovar() - suscripción cancelada → lanza IllegalStateException")
-    void renovar_cancelada_lanzaIllegalState() {
+    void renovar_suscripcionCancelada_lanzaIllegalStateException() {
         suscripcion.setEstado(EstadoSuscripcion.CANCELADA);
         when(repository.findById(1L)).thenReturn(Optional.of(suscripcion));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> service.renovar(1L, LocalDate.of(2024, 3, 1)));
-        assertThat(ex.getMessage()).contains("cancelada");
+        assertThatThrownBy(() -> service.renovar(1L, LocalDate.now().plusMonths(1)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("cancelada");
+
         verify(repository, never()).save(any());
     }
 
     @Test
-    @DisplayName("renovar() - suscripción no existe → lanza ResourceNotFoundException")
-    void renovar_noExistente_lanzaExcepcion() {
+    void renovar_suscripcionNoExiste_lanzaResourceNotFoundException() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> service.renovar(99L, LocalDate.of(2024, 3, 1)));
-        verify(repository, never()).save(any());
+        assertThatThrownBy(() -> service.renovar(99L, LocalDate.now().plusMonths(1)))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

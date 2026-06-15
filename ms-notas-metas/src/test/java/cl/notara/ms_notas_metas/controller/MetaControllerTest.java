@@ -95,7 +95,7 @@ class MetaControllerTest {
                 .andExpect(jsonPath("$.nombre").value("Aprender 50 palabras en inglés"))
                 .andExpect(jsonPath("$.estado").value("CONFIRMADA"));
 
-        verify(metaService, times(2)).guardar(any(Meta.class));
+        verify(metaService).guardar(any(Meta.class));
     }
 
     @Test

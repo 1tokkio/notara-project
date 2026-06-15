@@ -6,7 +6,7 @@ import cl.notara.ms_pagos_subscripciones.exceptions.ResourceNotFoundException;
 import cl.notara.ms_pagos_subscripciones.models.EstadoSuscripcion;
 import cl.notara.ms_pagos_subscripciones.models.Suscripcion;
 import cl.notara.ms_pagos_subscripciones.repositories.SuscripcionRepository;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.core.AmqpTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,11 +16,11 @@ import java.util.List;
 public class SuscripcionService {
 
     private final SuscripcionRepository repository;
-    private final RabbitTemplate rabbitTemplate;
+    private final AmqpTemplate amqpTemplate;
 
-    public SuscripcionService(SuscripcionRepository repository, RabbitTemplate rabbitTemplate) {
-        this.repository     = repository;
-        this.rabbitTemplate = rabbitTemplate;
+    public SuscripcionService(SuscripcionRepository repository, AmqpTemplate amqpTemplate) {
+        this.repository   = repository;
+        this.amqpTemplate = amqpTemplate;
     }
 
     public List<Suscripcion> listar() {
@@ -89,6 +89,6 @@ public class SuscripcionService {
                 s.getFechaInicio(),
                 s.getFechaFin()
         );
-        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, routingKey, evento);
+        amqpTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, routingKey, evento);
     }
 }

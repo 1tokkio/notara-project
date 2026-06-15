@@ -10,18 +10,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,77 +29,70 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(SuscripcionController.class)
+@Import(GlobalExceptionHandler.class)
 class SuscripcionControllerTest {
 
-    @Mock
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
     private SuscripcionService service;
 
-    @InjectMocks
-    private SuscripcionController controller;
-
-    private MockMvc mockMvc;
-    private ObjectMapper mapper;
+    private ObjectMapper objectMapper;
     private Suscripcion suscripcion;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setControllerAdvice(new GlobalExceptionHandler())
-                .build();
-
-        mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         suscripcion = new Suscripcion();
         suscripcion.setId(1L);
         suscripcion.setIdUsuario(10L);
-        suscripcion.setEmailUsuario("usuario@test.cl");
-        suscripcion.setNombreUsuario("Juan Pérez");
-        suscripcion.setPlan(Plan.PREMIUM);
+        suscripcion.setEmailUsuario("test@example.com");
+        suscripcion.setNombreUsuario("Juan Perez");
+        suscripcion.setPlan(Plan.BASICO);
         suscripcion.setEstado(EstadoSuscripcion.ACTIVA);
-        suscripcion.setFechaInicio(LocalDate.of(2024, 1, 1));
-        suscripcion.setFechaFin(LocalDate.of(2024, 2, 1));
+        suscripcion.setFechaInicio(LocalDate.of(2025, 1, 1));
+        suscripcion.setFechaFin(LocalDate.of(2025, 12, 31));
         suscripcion.setMonto(9990.0);
     }
 
     @Test
-    @DisplayName("GET /suscripciones → 200 con lista")
     void listar_retorna200ConLista() throws Exception {
-        when(service.listar()).thenReturn(List.of(suscripcion));
+        when(service.listar()).thenReturn(Arrays.asList(suscripcion));
 
         mockMvc.perform(get("/suscripciones"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].plan").value("PREMIUM"));
+                .andExpect(jsonPath("$[0].id").value(1L))
+                .andExpect(jsonPath("$[0].emailUsuario").value("test@example.com"));
     }
 
     @Test
-    @DisplayName("GET /suscripciones → 200 con lista vacía")
-    void listar_retorna200ListaVacia() throws Exception {
-        when(service.listar()).thenReturn(List.of());
+    void listar_retorna200ConListaVacia() throws Exception {
+        when(service.listar()).thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/suscripciones"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$").isEmpty());
     }
 
     @Test
-    @DisplayName("GET /suscripciones/{id} existente → 200")
-    void obtener_existente_retorna200() throws Exception {
+    void obtener_cuandoExiste_retorna200() throws Exception {
         when(service.obtener(1L)).thenReturn(suscripcion);
 
         mockMvc.perform(get("/suscripciones/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.idUsuario").value(10))
-                .andExpect(jsonPath("$.emailUsuario").value("usuario@test.cl"));
+                .andExpect(jsonPath("$.id").value(1L))
+                .andExpect(jsonPath("$.nombreUsuario").value("Juan Perez"));
     }
 
     @Test
-    @DisplayName("GET /suscripciones/{id} no encontrado → 404")
-    void obtener_noExistente_retorna404() throws Exception {
-        when(service.obtener(99L)).thenThrow(new ResourceNotFoundException("no encontrada con id: 99"));
+    void obtener_cuandoNoExiste_retorna404() throws Exception {
+        when(service.obtener(99L))
+                .thenThrow(new ResourceNotFoundException("Suscripción no encontrada con id: 99"));
 
         mockMvc.perform(get("/suscripciones/99"))
                 .andExpect(status().isNotFound())
@@ -108,43 +100,59 @@ class SuscripcionControllerTest {
     }
 
     @Test
-    @DisplayName("GET /suscripciones/usuario/{idUsuario} → 200")
-    void listarPorUsuario_retorna200() throws Exception {
-        when(service.listarPorUsuario(10L)).thenReturn(List.of(suscripcion));
+    void listarPorUsuario_retorna200ConSuscripciones() throws Exception {
+        when(service.listarPorUsuario(10L)).thenReturn(Arrays.asList(suscripcion));
 
         mockMvc.perform(get("/suscripciones/usuario/10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].emailUsuario").value("usuario@test.cl"));
+                .andExpect(jsonPath("$[0].idUsuario").value(10L));
     }
 
     @Test
-    @DisplayName("POST /suscripciones válido → 201")
-    void crear_valido_retorna201() throws Exception {
+    void listarPorUsuario_usuarioSinSuscripciones_retornaListaVacia() throws Exception {
+        when(service.listarPorUsuario(99L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/suscripciones/usuario/99"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void crear_conDatosValidos_retorna201() throws Exception {
         when(service.crear(any(Suscripcion.class))).thenReturn(suscripcion);
 
         mockMvc.perform(post("/suscripciones")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(suscripcion)))
+                        .content(objectMapper.writeValueAsString(suscripcion)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.plan").value("PREMIUM"))
-                .andExpect(jsonPath("$.estado").value("ACTIVA"));
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
-    @DisplayName("POST /suscripciones con usuario activo → 409")
-    void crear_usuarioConSuscripcionActiva_retorna409() throws Exception {
-        when(service.crear(any())).thenThrow(new IllegalStateException("ya tiene una suscripción activa"));
+    void crear_conCamposRequeridos_retorna400() throws Exception {
+        Suscripcion invalida = new Suscripcion();
 
         mockMvc.perform(post("/suscripciones")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(suscripcion)))
+                        .content(objectMapper.writeValueAsString(invalida)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores").exists());
+    }
+
+    @Test
+    void crear_conSuscripcionActivaExistente_retorna409() throws Exception {
+        when(service.crear(any(Suscripcion.class)))
+                .thenThrow(new IllegalStateException("El usuario ya tiene una suscripción activa"));
+
+        mockMvc.perform(post("/suscripciones")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(suscripcion)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.status").value(409));
     }
 
     @Test
-    @DisplayName("PUT /suscripciones/{id}/cancelar → 200")
-    void cancelar_retorna200() throws Exception {
+    void cancelar_retorna200ConEstadoCancelado() throws Exception {
         suscripcion.setEstado(EstadoSuscripcion.CANCELADA);
         when(service.cancelar(1L)).thenReturn(suscripcion);
 
@@ -154,48 +162,49 @@ class SuscripcionControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /suscripciones/{id}/cancelar ya cancelada → 409")
-    void cancelar_yaCancelada_retorna409() throws Exception {
-        when(service.cancelar(1L)).thenThrow(new IllegalStateException("ya está cancelada"));
+    void cancelar_yaEstabaCancelada_retorna409() throws Exception {
+        when(service.cancelar(1L))
+                .thenThrow(new IllegalStateException("La suscripción ya está cancelada"));
 
         mockMvc.perform(put("/suscripciones/1/cancelar"))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409));
     }
 
     @Test
-    @DisplayName("PUT /suscripciones/{id}/cancelar no encontrada → 404")
-    void cancelar_noExistente_retorna404() throws Exception {
-        when(service.cancelar(99L)).thenThrow(new ResourceNotFoundException("no encontrada con id: 99"));
+    void cancelar_noExiste_retorna404() throws Exception {
+        when(service.cancelar(99L))
+                .thenThrow(new ResourceNotFoundException("Suscripción no encontrada con id: 99"));
 
         mockMvc.perform(put("/suscripciones/99/cancelar"))
                 .andExpect(status().isNotFound());
     }
 
     @Test
-    @DisplayName("PUT /suscripciones/{id}/renovar → 200")
-    void renovar_retorna200() throws Exception {
+    void renovar_retorna200ConNuevaFecha() throws Exception {
+        LocalDate nuevaFecha = LocalDate.of(2026, 6, 1);
+        suscripcion.setFechaFin(nuevaFecha);
         when(service.renovar(eq(1L), any(LocalDate.class))).thenReturn(suscripcion);
 
-        Map<String, String> body = Map.of("fechaFin", "2024-03-01");
+        String body = objectMapper.writeValueAsString(Map.of("fechaFin", "2026-06-01"));
 
         mockMvc.perform(put("/suscripciones/1/renovar")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(body)))
+                        .content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
-    @DisplayName("PUT /suscripciones/{id}/renovar suscripción cancelada → 409")
-    void renovar_cancelada_retorna409() throws Exception {
+    void renovar_suscripcionCancelada_retorna409() throws Exception {
         when(service.renovar(eq(1L), any(LocalDate.class)))
                 .thenThrow(new IllegalStateException("No se puede renovar una suscripción cancelada"));
 
-        Map<String, String> body = Map.of("fechaFin", "2024-03-01");
+        String body = objectMapper.writeValueAsString(Map.of("fechaFin", "2026-06-01"));
 
         mockMvc.perform(put("/suscripciones/1/renovar")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(body)))
+                        .content(body))
                 .andExpect(status().isConflict());
     }
 }
