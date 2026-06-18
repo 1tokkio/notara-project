@@ -11,6 +11,27 @@ const registerRequestLogger = require("./middleware/requestLogger");
 
 const app = Fastify({ logger: true });
 
+// Swagger / OpenAPI
+app.register(require("@fastify/swagger"), {
+  openapi: {
+    info: {
+      title: "ms-canciones API",
+      description:
+        "Microservicio de canciones — búsqueda Spotify, letras (lrclib) y caché Redis",
+      version: "1.0.0",
+    },
+    tags: [
+      { name: "canciones", description: "Endpoints de canciones" },
+      { name: "health", description: "Estado del servicio" },
+    ],
+  },
+});
+
+app.register(require("@fastify/swagger-ui"), {
+  routePrefix: "/docs",
+  uiConfig: { docExpansion: "list" },
+});
+
 registerErrorHandler(app);
 registerRequestLogger(app);
 
@@ -21,23 +42,46 @@ app.register(require("@fastify/cors"), {
 
 app.register(songRoutes, { prefix: "" });
 
-app.get("/health", async () => ({
-  status: "ok",
-  service: "ms-canciones",
-  timestamp: new Date().toISOString(),
-}));
+app.get(
+  "/health",
+  {
+    schema: {
+      tags: ["health"],
+      summary: "Estado del servicio",
+      response: {
+        200: {
+          type: "object",
+          properties: {
+            status: { type: "string" },
+            service: { type: "string" },
+            timestamp: { type: "string" },
+          },
+        },
+      },
+    },
+  },
+  async () => ({
+    status: "ok",
+    service: "ms-canciones",
+    timestamp: new Date().toISOString(),
+  })
+);
 
 const start = async () => {
   try {
     try {
       await connectMongo();
     } catch (err) {
-      app.log.warn('MongoDB no disponible, persistencia desactivada: ' + err.message);
+      app.log.warn(
+        "MongoDB no disponible, persistencia desactivada: " + err.message
+      );
     }
     try {
       await connectRedis();
     } catch (err) {
-      app.log.warn('Redis no disponible, caché de letras desactivado: ' + err.message);
+      app.log.warn(
+        "Redis no disponible, caché de letras desactivado: " + err.message
+      );
     }
     await app.listen({ port: config.server.port, host: config.server.host });
     app.log.info(`ms-canciones corriendo en puerto ${config.server.port}`);

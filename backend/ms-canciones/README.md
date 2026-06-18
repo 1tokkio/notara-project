@@ -54,3 +54,27 @@ npm run test:integration  # solo integración
 ```
 
 Los tests cubren: CircuitBreaker, LessonFactory, SpotifyService, SongRepository, LyricsService y rutas HTTP.
+
+## Caché Redis
+
+| Clave | TTL | Datos cacheados | Por qué |
+|-------|-----|----------------|---------|
+| `lyrics:{spotifyId}` | **7 días** | Letra completa de la canción (LRC sincronizado o texto plano) | Las letras no cambian y la API externa (lrclib.net) tiene límite de requests |
+
+El caché se gestiona en `src/services/LyricsService.js` usando `redis.setEx(key, CACHE_TTL, data)`.
+El TTL de 7 días está configurado en `src/config/config.js` → `cache.lyricsTtlSeconds`.
+
+## Swagger / OpenAPI
+
+La documentación interactiva está disponible en:
+
+```
+http://localhost:3002/docs
+```
+
+## Docker
+
+```bash
+docker build -t notara-ms-canciones .
+docker run -p 3002:3002 --env-file .env notara-ms-canciones
+```

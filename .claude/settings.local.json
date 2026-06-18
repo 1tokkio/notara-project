@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(git fetch *)",
+      "Read(//c/Users/User/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/35658bcc-f190-4f0c-94da-6e220b7d311e/a352b524-8c2c-44b9-89c1-c2e81860e447/skills/docx/**)",
+      "Bash(pandoc \"C:\\\\Users\\\\User\\\\Downloads\\\\EFT126_DSY1106_ESTUDIANTE.docx\" -o output_reqs.md)",
+      "Bash(git stash *)",
+      "Bash(git pull *)"
+    ]
+  }
+}

@@ -1,4 +1,4 @@
-# 📊 Plan de Estrategia de Branching - Notara
+# Plan de Estrategia de Branching - Notara
 
 **Documento:** Plan de Branching  
 **Proyecto:** Notara - Plataforma de aprendizaje de inglés  
@@ -222,24 +222,24 @@ const isValidEmail = (email) => {
 
 ## 6. Beneficios para la Colaboración
 
-### ✅ Evita conflictos frecuentes
+### Evita conflictos frecuentes
 - Cada persona en rama independiente
 - Trabajo paralelo sin bloqueos
 
-### ✅ Fácil revertir cambios
+### Fácil revertir cambios
 ```bash
 git revert <commit-hash>  # Si algo sale mal
 ```
 
-### ✅ Historial limpio
+### Historial limpio
 - Commits descriptivos permiten entender qué cambió
 - Fácil hacer `git log --oneline` y entender la historia
 
-### ✅ Control de versiones efectivo
+### Control de versiones efectivo
 - main siempre estable
 - Ramas feature pueden experimentar sin riesgo
 
-### ✅ Facilita code review
+### Facilita code review
 - PR muestra exactamente qué cambió
 - Revisor puede comentar línea por línea
 
@@ -320,18 +320,3 @@ git restore archivo.js
 # Crear rama desde commit específico
 git checkout -b feature/nueva <commit-hash>
 ```
-
----
-
-## 9. Recomendaciones Finales
-
-1. **Commit frecuentemente** (cada feature pequeña)
-2. **Sincroniza con main regularmente** (evita conflictos grandes)
-3. **Revisa PRs antes de mergear** (calidad de código)
-4. **Escribe mensajes de commit claros** (facilita búsqueda)
-5. **Testea antes de mergear** (no rompes main)
-6. **Borrar ramas después de merge** (limpieza)
-
----
-
-**Conclusión:** Esta estrategia permite trabajo paralelo eficiente, fácil colaboración, y mantiene `main` siempre estable. Con disciplina en commits y reviews, el proyecto es escalable a más personas sin caos.
