@@ -67,10 +67,38 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <!--  SPRING SECURITY  -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <!--  JWT  -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.5</version>
+            <scope>runtime</scope>
+        </dependency>
         <!--  TEST  -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -149,6 +177,7 @@
                             <excludes>
                                 <exclude>cl/notara/ms_notas_metas/MsNotasMetasApplication.class</exclude>
                                 <exclude>cl/notara/ms_notas_metas/config/**</exclude>
+                                <exclude>cl/notara/ms_notas_metas/security/**</exclude>
                                 <exclude>cl/notara/ms_notas_metas/dto/**</exclude>
                                 <exclude>cl/notara/ms_notas_metas/models/**</exclude>
                                 <exclude>cl/notara/ms_notas_metas/client/**</exclude>

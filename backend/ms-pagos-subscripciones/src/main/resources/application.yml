@@ -45,3 +45,6 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+jwt:
+  secret: "hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif"

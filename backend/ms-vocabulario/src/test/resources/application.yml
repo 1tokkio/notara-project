@@ -17,3 +17,6 @@ eureka:
     fetch-registry: false
 
 spring.cloud.discovery.enabled: false
+
+jwt:
+  secret: "hfebwuyfgeyiuwfiokwsfiujgewfnjwehfuhbvwehfudyjwegfyuwejkdfgweuif"
