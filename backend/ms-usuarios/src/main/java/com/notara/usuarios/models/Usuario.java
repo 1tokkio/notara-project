@@ -20,6 +20,14 @@ import jakarta.validation.constraints.*;
  * @author Notara
  * @version 1.0
  */
+@NamedStoredProcedureQuery(
+    name = "Usuario.buscarPorEmail",
+    procedureName = "buscar_usuario_por_email",
+    resultClasses = Usuario.class,
+    parameters = {
+        @StoredProcedureParameter(mode = ParameterMode.IN, name = "p_email", type = String.class)
+    }
+)
 @Entity
 @Table(name = "usuarios")
 public class Usuario {

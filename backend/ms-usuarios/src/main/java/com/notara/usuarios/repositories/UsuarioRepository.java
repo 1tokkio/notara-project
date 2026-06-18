@@ -2,6 +2,8 @@ package com.notara.usuarios.repositories;
 
 import com.notara.usuarios.models.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.query.Procedure;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -58,5 +60,20 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
      *         {@code false} en caso contrario
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Ejecuta el stored procedure buscar_usuario_por_email.
+     *
+     * <p>
+     * Utilizado para busquedas de usuario por email a traves de un
+     * procedimiento almacenado en PostgreSQL, demostrando el uso
+     * de JPA + Stored Procedures en la arquitectura de microservicios.
+     * </p>
+     *
+     * @param email correo electronico a buscar
+     * @return usuario encontrado, o null si no existe
+     */
+    @Procedure(procedureName = "buscar_usuario_por_email")
+    Optional<Usuario> buscarPorEmailSP(@Param("p_email") String email);
 
 }
