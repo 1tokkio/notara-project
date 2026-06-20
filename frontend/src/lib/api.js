@@ -171,13 +171,13 @@ export const notas = {
   crear: (titulo, contenido, idUsuario) =>
     request('/notas', {
       method: 'POST',
-      body: JSON.stringify({ titulo, contenido, idUsuario }),
+      body: JSON.stringify({ titulo, contenido, idUsuario: Number(idUsuario) }),
     }),
 
   actualizar: (id, titulo, contenido, idUsuario) =>
     request(`/notas/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ titulo, contenido, idUsuario }),
+      body: JSON.stringify({ titulo, contenido, idUsuario: Number(idUsuario) }),
     }),
 
   eliminar: (id) =>

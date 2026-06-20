@@ -139,7 +139,7 @@ export default function NotasPage() {
     if (!form.nombre?.trim()) { setError('El nombre es obligatorio'); return; }
     setSaving(true);
     try {
-      const datos = { nombre: form.nombre, descripcion: form.descripcion, fechaLimite: form.fechaLimite || null, completada: form.completada, idUsuario: userId };
+      const datos = { nombre: form.nombre, descripcion: form.descripcion, fechaLimite: form.fechaLimite || null, completada: form.completada, idUsuario: Number(userId) };
       if (form.id) {
         const updated = await metasApi.actualizar(form.id, datos);
         setMetasList((prev) => prev.map((m) => m.id === form.id ? updated : m));
