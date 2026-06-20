@@ -48,8 +48,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(name, email, password);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-      window.location.href = `${apiUrl}/auth/spotify`;
+      router.push('/search');
     } catch (err) {
       setError(err.message || 'Error al crear la cuenta');
     } finally {
