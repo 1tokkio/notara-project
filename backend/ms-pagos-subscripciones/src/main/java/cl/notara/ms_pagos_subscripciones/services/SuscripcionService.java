@@ -361,10 +361,14 @@ public class SuscripcionService {
 
 
 
-        amqpTemplate.convertAndSend(
-                RabbitMQConfig.EXCHANGE,
-                routingKey,
-                evento
-        );
+        try {
+            amqpTemplate.convertAndSend(
+                    RabbitMQConfig.EXCHANGE,
+                    routingKey,
+                    evento
+            );
+        } catch (Exception e) {
+            System.err.println("[RabbitMQ] Error al publicar evento " + tipoEvento + ": " + e.getMessage());
+        }
     }
 }
