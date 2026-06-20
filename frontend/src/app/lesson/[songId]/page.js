@@ -85,7 +85,10 @@ function QuizChat({ exercises, onXP }) {
 
   const submit = (answer) => {
     if (!answer.trim() || done) return;
-    const correct  = answer.toLowerCase().trim() === (exercise.answer || '').toLowerCase().trim();
+    const correctAnswer = exercise.type === 'multiple_choice'
+      ? (exercise.options?.[exercise.correct] || '')
+      : (exercise.answer || '');
+    const correct  = answer.toLowerCase().trim() === correctAnswer.toLowerCase().trim();
     const newScore = score + (correct ? 1 : 0);
     if (correct) onXP(10);
     setScore(newScore);
@@ -101,7 +104,7 @@ function QuizChat({ exercises, onXP }) {
         role:    'ai',
         content: correct
           ? `Correcto!${exercise.explanation ? ` ${exercise.explanation}` : ''}`
-          : `No es correcto. La respuesta es "${exercise.answer}".${exercise.explanation ? ` ${exercise.explanation}` : ''}`,
+          : `No es correcto. La respuesta es "${correctAnswer}".${exercise.explanation ? ` ${exercise.explanation}` : ''}`,
         correct,
       },
       ...(isLast
