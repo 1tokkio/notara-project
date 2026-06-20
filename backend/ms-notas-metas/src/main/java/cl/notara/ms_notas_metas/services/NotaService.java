@@ -146,17 +146,11 @@ public class NotaService {
         } catch (Exception e) {
 
             System.out.println(
-                    "Error en solicitud: "
+                    "Error validando usuario (ms-usuarios no disponible): "
                             + e.getMessage()
             );
 
-            notaRepository.deleteById(
-                    notaGuardada.getId()
-            );
-
-            throw new RuntimeException(
-                    "Solicitud cancelada: error usuario invalido"
-            );
+            return notaGuardada;
         }
     }
 
