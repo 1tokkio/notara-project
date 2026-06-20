@@ -61,6 +61,12 @@ public class NotificacionListener {
             return;
         }
 
-        emailService.enviarNotificacion(evento);
+        try {
+            log.info("[Email] Intentando enviar correo a: {}", evento.getEmailDestinatario());
+            emailService.enviarNotificacion(evento);
+            log.info("[Email] Correo enviado exitosamente a: {}", evento.getEmailDestinatario());
+        } catch (Exception e) {
+            log.error("[Email] Error al enviar correo a {}: {}", evento.getEmailDestinatario(), e.getMessage());
+        }
     }
 }
