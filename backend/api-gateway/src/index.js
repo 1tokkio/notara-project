@@ -324,7 +324,7 @@ app.all('/progress/*', forwardToUsuarios);
 app.use('/auth',     createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
 app.use('/users',    createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
 app.use('/progress', createProxyMiddleware(proxyOptions(MS_USUARIOS_URL, 'ms-usuarios')));
-app.use('/songs',    createProxyMiddleware(proxyOptions(MS_CANCIONES_URL, 'ms-canciones')));
+app.use('/songs',    createProxyMiddleware({ ...proxyOptions(MS_CANCIONES_URL, 'ms-canciones'), pathRewrite: { '^/songs': '' } }));
 app.all('/notas',   forwardToNotasMetas);
 app.all('/notas/*', forwardToNotasMetas);
 app.all('/metas',            forwardToNotasMetas);
