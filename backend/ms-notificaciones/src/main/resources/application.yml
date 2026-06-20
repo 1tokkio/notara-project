@@ -20,10 +20,9 @@ spring:
       mail:
         smtp:
           auth: true
-          ssl:
-            enable: true
           starttls:
-            enable: false
+            enable: true
+            required: true
         debug: false
 
   jackson:
