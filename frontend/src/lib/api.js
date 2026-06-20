@@ -5,7 +5,7 @@
  * Maneja automáticamente el token JWT en los headers.
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'; // v2
 
 /**
  * Función base de fetch con manejo de errores y token automático.
